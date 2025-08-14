@@ -2,10 +2,10 @@
 import { db } from './lib/db.js';
 import * as schema from './lib/schema.js';
 import { eq } from 'drizzle-orm';
-import { getSessionUser } from './lib/session.js';
+import { getSessionUser, createSession, deleteSession } from './lib/session.js';
 import { GoogleGenAI } from "@google/genai";
-import { pbkdf2Sync, randomBytes } from 'crypto';
-import type { AttachmentPayload } from '../types.js';
+import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
+import type { AttachmentPayload } from './lib/types.js';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { checkPermission } from './lib/permissions.js';
@@ -49,12 +49,27 @@ function checkZohoCredentials() {
     }
 }
 
-// --- Helper to hash password for new users ---
+// --- Password Helpers ---
 const hashPassword = (password: string) => {
     const salt = randomBytes(16).toString('hex');
     const hash = pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
     return `${salt}:${hash}`;
 };
+
+const verifyPassword = (password: string, storedHash: string): boolean => {
+    try {
+        const [salt, key] = storedHash.split(':');
+        if (!salt || !key) return false;
+        const hashToCompare = pbkdf2Sync(password, salt, 1000, 64, 'sha512');
+        const storedKeyBuffer = Buffer.from(key, 'hex');
+        if (hashToCompare.length !== storedKeyBuffer.length) return false;
+        return timingSafeEqual(hashToCompare, storedKeyBuffer);
+    } catch (error) {
+        console.error("Erro durante a verificação da senha:", error);
+        return false;
+    }
+};
+
 
 const ENTITY_MAP = {
     employees: schema.employees,
@@ -86,9 +101,9 @@ export default async function handler(req: any, res: any) {
         let session = null;
         let userRole: UserRole | undefined = undefined;
 
-        const isPublicEndpoint = (entity === 'gemini' && (action === 'news' || action === 'analyze')) ||
+        const isPublicEndpoint = (entity === 'gemini') ||
                              (entity === 'zoho') ||
-                             (req.url.includes('/auth/'));
+                             (entity === 'auth' && action === 'login');
 
         if (!isPublicEndpoint) {
             session = await getSessionUser(req);
@@ -104,6 +119,11 @@ export default async function handler(req: any, res: any) {
         }
         
         // --- Specific Handlers ---
+
+        if (entity === 'auth') {
+            return await authRouter(req, res, session);
+        }
+        
         if (entity === 'allData') {
             if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
             if (!checkPermission(userRole, 'dashboard', 'view')) return res.status(403).json({ error: 'Acesso negado.' });
@@ -209,6 +229,59 @@ export default async function handler(req: any, res: any) {
             });
         }
         return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    }
+}
+
+// --- Auth Router ---
+async function authRouter(req: any, res: any, session: { id: string } | null) {
+    const { action } = req.query;
+
+    switch (action) {
+        case 'login': {
+            if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+            const { email, password } = req.body;
+            if (!email || !password) {
+                return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
+            }
+            const userWithPassword = await db.query.profiles.findFirst({
+                where: eq(schema.profiles.email, email.toLowerCase()),
+            });
+            if (!userWithPassword || !userWithPassword.passwordHash || !verifyPassword(password, userWithPassword.passwordHash)) {
+                return res.status(401).json({ error: 'Credenciais inválidas.' });
+            }
+            const { passwordHash, ...userToReturn } = userWithPassword;
+            await createSession(userWithPassword.id, res);
+            return res.status(200).json({ user: userToReturn });
+        }
+        case 'me': {
+            if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
+            if (!session) {
+                return res.status(401).json({ error: 'Not authenticated' });
+            }
+            const result = await db.select({
+                id: schema.profiles.id,
+                email: schema.profiles.email,
+                name: schema.profiles.name,
+                role: schema.profiles.role,
+                department: schema.profiles.department,
+                pfp: schema.profiles.pfp,
+            }).from(schema.profiles).where(eq(schema.profiles.id, session.id)).limit(1);
+            const user = result[0];
+            if (!user) {
+                 return res.status(404).json({ error: 'User not found' });
+            }
+            return res.status(200).json({ user });
+        }
+        case 'logout': {
+            if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+             if (!session) {
+                return res.status(401).json({ error: 'Not authenticated' });
+            }
+            await deleteSession(req, res);
+            return res.status(200).json({ success: true });
+        }
+        default:
+            return res.status(404).json({ error: `Unknown action for auth: ${action}` });
     }
 }
 
