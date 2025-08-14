@@ -1,4 +1,3 @@
-
 /// <reference types="node" />
 
 import 'dotenv/config';
@@ -158,7 +157,9 @@ async function main() {
         await db.insert(schema.leaveRequests).values(leaveRequestInserts.map(({ employeeIndex, ...rest}) => rest));
         
         console.log('Povoando a tabela de sistemas externos...');
-        await db.insert(schema.externalSystems).values(DEFAULT_EXTERNAL_SYSTEMS);
+        if (DEFAULT_EXTERNAL_SYSTEMS.length > 0) {
+            await db.insert(schema.externalSystems).values(DEFAULT_EXTERNAL_SYSTEMS);
+        }
 
         console.log('Salvando configurações padrão (permissões)...');
         await db.insert(schema.appConfig).values({ key: 'permissions', value: DEFAULT_PERMISSIONS });
