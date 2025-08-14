@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkSession = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/me');
+      const response = await fetch('/api/router?entity=auth&action=me');
       if (response.ok) {
         const { user: sessionUser } = await handleApiResponse<{ user: User }>(response);
         setUser(sessionUser);
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/router?entity=auth&action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass }),
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     setLoading(true);
     try {
-        await fetch('/api/logout', { method: 'POST' });
+        await fetch('/api/router?entity=auth&action=logout', { method: 'POST' });
     } catch(e){
         console.error("Logout failed", e)
     } finally {
