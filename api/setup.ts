@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 import { db } from './lib/db.js';
 import * as schema from './lib/schema.js';
@@ -174,7 +173,9 @@ export default async function handler(req: any, res: any) {
         await db.insert(schema.leaveRequests).values(leaveRequestsToInsert);
         
         console.log('Povoando a tabela de sistemas externos...');
-        await db.insert(schema.externalSystems).values(DEFAULT_EXTERNAL_SYSTEMS);
+        if (DEFAULT_EXTERNAL_SYSTEMS.length > 0) {
+            await db.insert(schema.externalSystems).values(DEFAULT_EXTERNAL_SYSTEMS);
+        }
 
         console.log('Salvando configurações padrão (permissões)...');
         await db.insert(schema.appConfig).values([
