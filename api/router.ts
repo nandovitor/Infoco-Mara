@@ -143,20 +143,25 @@ export default async function handler(req: any, res: any) {
         
         switch (req.method) {
             case 'POST': {
-                let dataToSave = req.body;
+                const dataToSave = req.body;
                 if (action === 'add') {
                      if (!checkPermission(userRole, entityName, 'add')) return res.status(403).json({ error: 'Você não tem permissão para adicionar este item.' });
                      
-                     let finalData = { ...dataToSave };
-                     if (entityName === 'profiles' && finalData.password) {
-                        const { password, ...userData } = finalData;
-                        finalData = { ...userData, passwordHash: hashPassword(password) };
-                    } else if (entityName === 'updatePosts' && session) {
-                        finalData.authorId = session.id;
-                    }
+                     const dataToInsert = { ...dataToSave };
+                     if (dataToInsert.id) delete dataToInsert.id;
+
+                     if (entityName === 'profiles') {
+                         if (!dataToInsert.password || !dataToInsert.email) {
+                             return res.status(400).json({ error: 'Email e senha são obrigatórios para novos usuários.' });
+                         }
+                         dataToInsert.email = dataToInsert.email.toLowerCase();
+                         dataToInsert.passwordHash = hashPassword(dataToInsert.password);
+                         delete dataToInsert.password;
+                     } else if (entityName === 'updatePosts' && session) {
+                         dataToInsert.authorId = session.id;
+                     }
                     
-                    const { id, ...insertData } = finalData;
-                    await db.insert(table).values(insertData as any);
+                    await db.insert(table).values(dataToInsert as any);
 
                 } else if (action === 'update') {
                     if (!checkPermission(userRole, entityName, 'update')) return res.status(403).json({ error: 'Você não tem permissão para editar este item.' });
@@ -165,6 +170,7 @@ export default async function handler(req: any, res: any) {
                     if (entityName === 'profiles') {
                         delete updateData.password;
                         delete updateData.passwordHash;
+                        if(updateData.email) updateData.email = updateData.email.toLowerCase();
                     }
                     await (db.update(table) as any).set(updateData).where(eq((table as any).id, id));
                 
