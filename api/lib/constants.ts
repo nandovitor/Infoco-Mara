@@ -1,6 +1,7 @@
 
 
-import { Employee, Task, FinanceData, Permissions, PermissionSet, UserRole, EmployeeExpense, ExpenseType, PaymentStatus, InternalExpense, InternalExpenseCategory, Asset, AssetStatus, Notification, Supplier, Transaction, PayrollRecord, LeaveRequest, Profile, UpdatePost, ExternalSystem, ExternalSystemType } from './types';
+
+import { Employee, Task, FinanceData, Permissions, PermissionSet, UserRole, EmployeeExpense, ExpenseType, PaymentStatus, InternalExpense, InternalExpenseCategory, Asset, AssetStatus, Notification, Supplier, Transaction, PayrollRecord, LeaveRequest, Profile, UpdatePost, ExternalSystem, ExternalSystemType } from './types.js';
 
 // IDs são removidos e serão gerados pelo banco de dados. Referências são feitas por email ou índice.
 export const DEFAULT_SYSTEM_USERS: (Omit<Profile, 'id' | 'pfp'> & { password?: string })[] = [
