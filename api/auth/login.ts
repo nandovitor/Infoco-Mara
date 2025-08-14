@@ -32,8 +32,9 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
         }
         
-        const result = await db.select().from(profiles).where(eq(profiles.email, email.toLowerCase())).limit(1);
-        const userWithPassword = result[0];
+        const userWithPassword = await db.query.profiles.findFirst({
+            where: eq(profiles.email, email.toLowerCase()),
+        });
 
         if (!userWithPassword) {
             return res.status(401).json({ error: 'Credenciais inválidas.' });
