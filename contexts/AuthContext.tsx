@@ -4,6 +4,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { User } from '../types';
 import { handleApiResponse } from '../utils/utils';
 import { useData } from './DataContext';
+import { useToast } from './ToastContext';
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const dataContext = useData();
+  const { addToast } = useToast();
 
   const checkSession = async () => {
     setLoading(true);
@@ -56,9 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const { user: loggedInUser } = await handleApiResponse<{ user: User }>(response);
       setUser(loggedInUser);
-      await dataContext.fetchData(); // Refetch all data for the new user
+
+      // Agora, tentamos buscar os dados. Se falhar, é um sinal de problema de sessão.
+      try {
+        await dataContext.fetchData();
+      } catch (fetchError: any) {
+        console.error("Falha ao buscar dados após o login, revertendo. Provável problema de sessão.", fetchError);
+        addToast("Login bem-sucedido, mas falha ao carregar dados. Verifique a configuração do servidor.", "error");
+        // Desloga o usuário para evitar estado inconsistente.
+        await logout(); 
+        // Lança um novo erro para que a tela de login possa tratar, se necessário.
+        throw new Error("Sessão inválida após login. Verifique as variáveis de ambiente do servidor.");
+      }
+
     } catch (error: any) {
-      // Re-throw to be caught by the login page
+      // Re-throw para ser pego pela página de login
       throw error;
     } finally {
       setLoading(false);
