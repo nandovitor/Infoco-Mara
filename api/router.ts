@@ -5,11 +5,11 @@ import { eq } from 'drizzle-orm';
 import { getSessionUser } from './lib/session.js';
 import { GoogleGenAI } from "@google/genai";
 import { pbkdf2Sync, randomBytes } from 'crypto';
-import type { AttachmentPayload } from './lib/types.js';
+import type { AttachmentPayload } from '../types.js';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { checkPermission } from './lib/permissions.js';
-import type { UserRole } from './lib/types.js';
+import type { UserRole } from '../types.js';
 
 
 // --- Environment Variable Check ---
@@ -146,13 +146,16 @@ export default async function handler(req: any, res: any) {
                 let dataToSave = req.body;
                 if (action === 'add') {
                      if (!checkPermission(userRole, entityName, 'add')) return res.status(403).json({ error: 'Você não tem permissão para adicionar este item.' });
-                     if (entityName === 'profiles' && dataToSave.password) {
-                        const { password, ...userData } = dataToSave;
-                        dataToSave = { ...userData, passwordHash: hashPassword(password) };
+                     
+                     let finalData = { ...dataToSave };
+                     if (entityName === 'profiles' && finalData.password) {
+                        const { password, ...userData } = finalData;
+                        finalData = { ...userData, passwordHash: hashPassword(password) };
                     } else if (entityName === 'updatePosts' && session) {
-                        dataToSave.authorId = session.id;
+                        finalData.authorId = session.id;
                     }
-                    const { id, ...insertData } = dataToSave;
+                    
+                    const { id, ...insertData } = finalData;
                     await db.insert(table).values(insertData as any);
 
                 } else if (action === 'update') {
