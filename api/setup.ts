@@ -60,84 +60,118 @@ export default async function handler(req: any, res: any) {
         console.log('Iniciando povoamento do banco de dados via API...');
 
         console.log('Povoando a tabela de perfis (usuários)...');
-        const userInserts = DEFAULT_SYSTEM_USERS.map(user => ({
-            ...user,
-            passwordHash: hashPassword(user.password || 'senhaPadrao123')
-        }));
-        await db.insert(schema.profiles).values(userInserts.map(({ password, ...rest }) => rest));
-
+        const usersToInsert = DEFAULT_SYSTEM_USERS.map(user => {
+            const { password, ...userData } = user;
+            return {
+                ...userData,
+                passwordHash: hashPassword(password || 'senhaPadrao123')
+            };
+        });
+        await db.insert(schema.profiles).values(usersToInsert);
+        
         const allUsers = await db.select().from(schema.profiles);
         const adminUser = allUsers.find((u: { role: string; }) => u.role === 'admin');
         if (!adminUser) throw new Error("Usuário admin não encontrado após inserção.");
 
         console.log('Povoando a tabela de posts de atualização...');
-        await db.insert(schema.updatePosts).values(DEFAULT_UPDATE_POSTS.map(post => ({ ...post, authorId: adminUser.id })));
+        const postsToInsert = DEFAULT_UPDATE_POSTS.map(post => ({ ...post, authorId: adminUser.id }));
+        await db.insert(schema.updatePosts).values(postsToInsert);
 
         console.log('Povoando a tabela de funcionários...');
-        await db.insert(schema.employees).values(DEFAULT_EMPLOYEES.map(e => ({...e, baseSalary: e.baseSalary?.toString() })));
+        const employeesToInsert = DEFAULT_EMPLOYEES.map(e => ({...e, baseSalary: e.baseSalary?.toString() }));
+        await db.insert(schema.employees).values(employeesToInsert);
         const allEmployees = await db.select().from(schema.employees);
 
         console.log('Povoando a tabela de tarefas...');
-        await db.insert(schema.tasks).values(DEFAULT_TASKS.map(task => ({
-            ...task,
-            hours: task.hours.toString(),
-            employeeId: allEmployees[task.employeeIndex].id
-        })).map(({ employeeIndex, ...rest }) => rest));
+        const tasksToInsert = DEFAULT_TASKS.map(task => {
+            const { employeeIndex, ...taskData } = task;
+            return {
+                ...taskData,
+                hours: taskData.hours.toString(),
+                employeeId: allEmployees[employeeIndex].id
+            };
+        });
+        await db.insert(schema.tasks).values(tasksToInsert);
 
         console.log('Povoando a tabela de municípios (dados financeiros)...');
-        await db.insert(schema.municipalities).values(DEFAULT_FINANCE_DATA.map(m => ({ ...m, paid: m.paid.toString(), pending: m.pending.toString() })));
+        const municipalitiesToInsert = DEFAULT_FINANCE_DATA.map(m => ({ ...m, paid: m.paid.toString(), pending: m.pending.toString() }));
+        await db.insert(schema.municipalities).values(municipalitiesToInsert);
         const allMunicipalities = await db.select().from(schema.municipalities);
 
         console.log('Povoando a tabela de despesas de funcionários...');
-        await db.insert(schema.employeeExpenses).values(DEFAULT_EMPLOYEE_EXPENSES.map(exp => ({
-            ...exp,
-            amount: exp.amount.toString(),
-            employeeId: allEmployees[exp.employeeIndex].id
-        })).map(({ employeeIndex, ...rest}) => rest));
+        const employeeExpensesToInsert = DEFAULT_EMPLOYEE_EXPENSES.map(exp => {
+            const { employeeIndex, ...expData } = exp;
+            return {
+                ...expData,
+                amount: expData.amount.toString(),
+                employeeId: allEmployees[employeeIndex].id
+            };
+        });
+        await db.insert(schema.employeeExpenses).values(employeeExpensesToInsert);
 
         console.log('Povoando a tabela de fornecedores...');
         await db.insert(schema.suppliers).values(DEFAULT_SUPPLIERS);
         const allSuppliers = await db.select().from(schema.suppliers);
         
         console.log('Povoando a tabela de despesas internas...');
-        await db.insert(schema.internalExpenses).values(DEFAULT_INTERNAL_EXPENSES.map(exp => ({
-            ...exp,
-            amount: exp.amount.toString(),
-            supplierId: exp.supplierIndex !== undefined ? allSuppliers[exp.supplierIndex].id : undefined
-        })).map(({ supplierIndex, ...rest }) => rest));
+        const internalExpensesToInsert = DEFAULT_INTERNAL_EXPENSES.map(exp => {
+            const { supplierIndex, ...expData } = exp;
+            return {
+                ...expData,
+                amount: expData.amount.toString(),
+                supplierId: supplierIndex !== undefined ? allSuppliers[supplierIndex].id : undefined
+            };
+        });
+        await db.insert(schema.internalExpenses).values(internalExpensesToInsert);
         
         console.log('Povoando a tabela de patrimônio (assets)...');
-        await db.insert(schema.assets).values(DEFAULT_ASSETS.map(asset => ({
-            ...asset,
-            purchaseValue: asset.purchaseValue.toString(),
-            assignedToEmployeeId: asset.employeeIndex !== undefined ? allEmployees[asset.employeeIndex].id : undefined
-        })).map(({ employeeIndex, ...rest}) => rest));
+        const assetsToInsert = DEFAULT_ASSETS.map(asset => {
+            const { employeeIndex, ...assetData } = asset;
+            return {
+                ...assetData,
+                purchaseValue: assetData.purchaseValue.toString(),
+                assignedToEmployeeId: employeeIndex !== undefined ? allEmployees[employeeIndex].id : undefined
+            };
+        });
+        await db.insert(schema.assets).values(assetsToInsert);
 
         console.log('Povoando a tabela de notificações...');
         await db.insert(schema.notifications).values(DEFAULT_NOTIFICATIONS);
 
         console.log('Povoando a tabela de transações...');
-        await db.insert(schema.transactions).values(DEFAULT_TRANSACTIONS.map(t => ({
-            ...t,
-            amount: t.amount.toString(),
-            municipalityId: t.municipalityIndex !== undefined ? allMunicipalities[t.municipalityIndex].id : undefined
-        })).map(({ municipalityIndex, ...rest }) => rest));
+        const transactionsToInsert = DEFAULT_TRANSACTIONS.map(t => {
+            const { municipalityIndex, ...tData } = t;
+            return {
+                ...tData,
+                amount: tData.amount.toString(),
+                municipalityId: municipalityIndex !== undefined ? allMunicipalities[municipalityIndex].id : undefined
+            };
+        });
+        await db.insert(schema.transactions).values(transactionsToInsert);
         
         console.log('Povoando a tabela de folhas de pagamento...');
-        await db.insert(schema.payrollRecords).values(DEFAULT_PAYROLLS.map(p => ({
-            ...p,
-            baseSalary: p.baseSalary.toString(),
-            benefits: p.benefits.toString(),
-            deductions: p.deductions.toString(),
-            netPay: p.netPay.toString(),
-            employeeId: allEmployees[p.employeeIndex].id
-        })).map(({ employeeIndex, ...rest}) => rest));
+        const payrollsToInsert = DEFAULT_PAYROLLS.map(p => {
+            const { employeeIndex, ...pData } = p;
+            return {
+                ...pData,
+                baseSalary: pData.baseSalary.toString(),
+                benefits: pData.benefits.toString(),
+                deductions: pData.deductions.toString(),
+                netPay: pData.netPay.toString(),
+                employeeId: allEmployees[employeeIndex].id
+            };
+        });
+        await db.insert(schema.payrollRecords).values(payrollsToInsert);
         
         console.log('Povoando a tabela de solicitações de ausência...');
-        await db.insert(schema.leaveRequests).values(DEFAULT_LEAVE_REQUESTS.map(l => ({
-            ...l,
-            employeeId: allEmployees[l.employeeIndex].id
-        })).map(({ employeeIndex, ...rest}) => rest));
+        const leaveRequestsToInsert = DEFAULT_LEAVE_REQUESTS.map(l => {
+            const { employeeIndex, ...lData } = l;
+            return {
+                ...lData,
+                employeeId: allEmployees[employeeIndex].id
+            };
+        });
+        await db.insert(schema.leaveRequests).values(leaveRequestsToInsert);
         
         console.log('Povoando a tabela de sistemas externos...');
         await db.insert(schema.externalSystems).values(DEFAULT_EXTERNAL_SYSTEMS);
