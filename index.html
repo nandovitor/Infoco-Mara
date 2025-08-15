@@ -1,14 +1,32 @@
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
+    <!-- Metadados Essenciais -->
     <meta charset="UTF-8" />
-    <!-- Favicon super leve para corrigir o erro de build e melhorar a performance -->
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADBJREFUOE9jZMAN/uM/AwMDAxMDEHbA4D8agwD2Q+L/g6iFGA4A9kMD2A8A+SECzYYCANx+ASQYyY1qAAAAAElFTkSuQmCC" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Título e Descrição para SEO e Compartilhamento -->
     <title>INFOCO - Gestão Inteligente</title>
+    <meta name="description" content="Sistema de Gestão Pública Inteligente para otimizar processos, gerenciar equipes e aumentar a eficiência." />
+
+    <!-- Ícone da Aplicação (Favicon) -->
+    <!-- Favicon leve e personalizado (letra 'I' de Infoco) embutido para melhor performance inicial. -->
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAHBJREFUOE9jZKAQMOL3/z8g5gVCDAxAFiCWIEMD8f/n5gZDEgIz4AWI4X8gBsz/8/Pz/wPxfyBmhBggZgDi/0A8EoiZkC0YpBGNyA4+kGr4n4gBIM04ZAbQNAbIAAlUTgCgSwA3YgD9Xkgy6gAAAABJRU5ErkJggg==" />
+    
+    <!-- Cor do Tema para Navegadores Mobile (Chrome, Firefox OS, Opera) -->
+    <meta name="theme-color" content="#2563eb" />
+
   </head>
   <body>
+    <!-- Ponto de Montagem da Aplicação React -->
     <div id="root"></div>
+
+    <!-- Fallback para usuários com JavaScript desabilitado -->
+    <noscript>
+      Você precisa habilitar o JavaScript para rodar esta aplicação.
+    </noscript>
+    
+    <!-- Script Principal da Aplicação -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
