@@ -23,3 +23,30 @@ export interface PermissionSet {
     canPostUpdates: boolean;
     canManageEmail: boolean;
 }
+
+export interface Profile {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  department: string;
+  pfp?: string;
+}
+
+export interface UpdatePost {
+    id: number;
+    author_id: string;
+    content: string;
+    created_at: string;
+}
+
+export type ExternalSystemType = 'Contábil' | 'Licitações' | 'Almoxarifado' | 'Patrimônio' | 'Outro';
+
+export interface ExternalSystem {
+    id: number;
+    name: string;
+    type: ExternalSystemType;
+    apiUrl: string;
+    accessToken: string;
+    tokenType: string;
+}
