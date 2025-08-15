@@ -1,6 +1,5 @@
 
 
-
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -80,7 +79,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, setI
   }
 
   return (
-    <aside className={cn(
+    <aside 
+        id="tour-step-1-sidebar"
+        className={cn(
         'w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white flex flex-col shrink-0',
         'fixed inset-y-0 left-0 z-30',
         'transform transition-transform duration-300 ease-in-out',
