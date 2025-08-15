@@ -432,8 +432,10 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: params.toString(),
         });
-
+        
+        // Explicitly type the response to fix the 'unknown' type error.
         const tokenData = await response.json() as ZohoTokenPayload & { error?: string, error_description?: string };
+
         if (!response.ok || tokenData.error) {
             console.error("Erro na troca de token do Zoho:", tokenData);
             throw new Error(tokenData.error_description || tokenData.error || 'Falha ao trocar o código pelo token.');
@@ -471,6 +473,7 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         if (!emailResponse.ok) { const errorData = await emailResponse.json() as { data?: { message?: string } }; throw new Error(errorData.data?.message || 'Falha ao buscar os e-mails.'); }
         const emailData = await emailResponse.json() as { data: any[] };
 
+        // Make email processing more robust to prevent crashes from unexpected data formats.
         const emailList = Array.isArray(emailData.data) ? emailData.data : [];
         const simplifiedEmails = emailList.flatMap((email: any) => {
             try {
