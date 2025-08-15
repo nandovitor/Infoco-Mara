@@ -1,3 +1,4 @@
+
 import { PermissionSet, UserRole } from '../../types.js';
 
 export const PERMISSIONS: Record<UserRole, PermissionSet> = {
@@ -27,6 +28,7 @@ const ENTITY_PERMISSION_MAP: Record<string, keyof PermissionSet | 'dashboard' | 
     notifications: 'canViewDashboard', // Basic permission to interact
     dashboard: 'canViewDashboard',
     settings: 'canManageSettings',
+    mail: 'canManageEmail',
 };
 
 type Action = 'add' | 'update' | 'delete' | 'view';
