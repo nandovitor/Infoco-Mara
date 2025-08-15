@@ -1,5 +1,3 @@
-
-
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -23,16 +21,17 @@ import UsersTab from './tabs/UsersTab';
 import UpdatesFeedTab from './tabs/UpdatesFeedTab';
 import MailTab from './tabs/MailTab';
 import AiAssistant from '../ai/AiAssistant';
+import WelcomeTour from '../ui/WelcomeTour';
 import { Bot } from 'lucide-react';
 import { PermissionSet } from '../../types';
 import { cn } from '../../utils/utils';
 import ZohoCallbackHandler from '../auth/ZohoCallbackHandler';
 
-
 const DashboardLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   
   const authContext = useContext(AuthContext);
   const { permissions } = useData();
@@ -49,64 +48,77 @@ const DashboardLayout: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Verifica se o tour já foi completado
+    const tourCompleted = localStorage.getItem('infoco-tour-completed');
+    if (!tourCompleted) {
+      setShowTour(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!userPermissions) return;
 
     const tabPermissionMap: Record<string, keyof PermissionSet> = {
-        dashboard: 'canViewDashboard',
-        'updates-feed': 'canViewDashboard',
-        database: 'canManageDocuments',
-        quotes: 'canManageDocuments',
-        employees: 'canManageEmployees',
-        tasks: 'canManageTasks',
-        finance: 'canManageFinance',
-        notes: 'canManageNotes',
-        hr: 'canManageHR',
-        'internal-expenses': 'canManageInternalExpenses',
-        assets: 'canManageAssets',
-        municipalities: 'canManageFinance',
-        reports: 'canViewReports',
-        settings: 'canManageSettings',
-        users: 'canManageUsers',
-        mail: 'canManageEmail',
+      dashboard: 'canViewDashboard',
+      'updates-feed': 'canViewDashboard',
+      database: 'canManageDocuments',
+      quotes: 'canManageDocuments',
+      employees: 'canManageEmployees',
+      tasks: 'canManageTasks',
+      finance: 'canManageFinance',
+      notes: 'canManageNotes',
+      hr: 'canManageHR',
+      'internal-expenses': 'canManageInternalExpenses',
+      assets: 'canManageAssets',
+      municipalities: 'canManageFinance',
+      reports: 'canViewReports',
+      settings: 'canManageSettings',
+      users: 'canManageUsers',
+      mail: 'canManageEmail',
     };
     
     const currentTabPermission = tabPermissionMap[activeTab];
 
     if (currentTabPermission && !userPermissions[currentTabPermission]) {
-        setActiveTab('dashboard');
+      setActiveTab('dashboard');
     }
   }, [activeTab, userPermissions]);
+
+  const handleCloseTour = () => {
+    setShowTour(false);
+    localStorage.setItem('infoco-tour-completed', 'true');
+  };
 
   const renderContent = () => {
     if (!userPermissions) return <div className="p-6">Carregando permissões...</div>;
 
     if (activeTab === 'mail_callback') {
-        return <ZohoCallbackHandler onComplete={() => setActiveTab('mail')} />;
+      return <ZohoCallbackHandler onComplete={() => setActiveTab('mail')} />;
     }
 
     const tabs: Record<string, { component: React.ReactNode, permission: keyof PermissionSet }> = {
-        dashboard: { component: <DashboardTab setActiveTab={setActiveTab} />, permission: 'canViewDashboard' },
-        'updates-feed': { component: <UpdatesFeedTab />, permission: 'canViewDashboard' },
-        database: { component: <DatabaseTab />, permission: 'canManageDocuments' },
-        quotes: { component: <QuotesTab />, permission: 'canManageDocuments' },
-        employees: { component: <EmployeesTab />, permission: 'canManageEmployees' },
-        tasks: { component: <TasksTab />, permission: 'canManageTasks' },
-        finance: { component: <FinanceTab />, permission: 'canManageFinance' },
-        notes: { component: <NotesTab />, permission: 'canManageNotes' },
-        hr: { component: <HumanResourcesTab />, permission: 'canManageHR' },
-        'internal-expenses': { component: <InternalExpensesTab />, permission: 'canManageInternalExpenses' },
-        assets: { component: <AssetsTab />, permission: 'canManageAssets' },
-        municipalities: { component: <MunicipalitiesTab />, permission: 'canManageFinance' },
-        reports: { component: <ReportsTab />, permission: 'canViewReports' },
-        settings: { component: <SettingsTab />, permission: 'canManageSettings' },
-        users: { component: <UsersTab />, permission: 'canManageUsers' },
-        mail: { component: <MailTab />, permission: 'canManageEmail' },
+      dashboard: { component: <DashboardTab setActiveTab={setActiveTab} />, permission: 'canViewDashboard' },
+      'updates-feed': { component: <UpdatesFeedTab />, permission: 'canViewDashboard' },
+      database: { component: <DatabaseTab />, permission: 'canManageDocuments' },
+      quotes: { component: <QuotesTab />, permission: 'canManageDocuments' },
+      employees: { component: <EmployeesTab />, permission: 'canManageEmployees' },
+      tasks: { component: <TasksTab />, permission: 'canManageTasks' },
+      finance: { component: <FinanceTab />, permission: 'canManageFinance' },
+      notes: { component: <NotesTab />, permission: 'canManageNotes' },
+      hr: { component: <HumanResourcesTab />, permission: 'canManageHR' },
+      'internal-expenses': { component: <InternalExpensesTab />, permission: 'canManageInternalExpenses' },
+      assets: { component: <AssetsTab />, permission: 'canManageAssets' },
+      municipalities: { component: <MunicipalitiesTab />, permission: 'canManageFinance' },
+      reports: { component: <ReportsTab />, permission: 'canViewReports' },
+      settings: { component: <SettingsTab />, permission: 'canManageSettings' },
+      users: { component: <UsersTab />, permission: 'canManageUsers' },
+      mail: { component: <MailTab />, permission: 'canManageEmail' },
     }
     
     const currentTabInfo = tabs[activeTab];
 
-    if(currentTabInfo && userPermissions[currentTabInfo.permission]) {
-        return currentTabInfo.component;
+    if (currentTabInfo && userPermissions[currentTabInfo.permission]) {
+      return currentTabInfo.component;
     }
     
     // Fallback to dashboard if something goes wrong or access is denied
@@ -135,20 +147,34 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      {showTour && <WelcomeTour onClose={handleCloseTour} />}
+      
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen} 
+      />
+      
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <Header title={pageTitles[activeTab] ?? 'Dashboard'} onMenuClick={() => setIsSidebarOpen(true)} setActiveTab={setActiveTab} />
+        <Header 
+          title={pageTitles[activeTab] ?? 'Dashboard'} 
+          onMenuClick={() => setIsSidebarOpen(true)} 
+          setActiveTab={setActiveTab} 
+        />
+        
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 sm:p-6">
           <div className="container mx-auto max-w-7xl">
             {renderContent()}
           </div>
         </main>
-         {isSidebarOpen && (
-            <div 
-                className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden" 
-                onClick={() => setIsSidebarOpen(false)}
-                aria-hidden="true"
-            ></div>
+        
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden" 
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
         )}
       </div>
       
