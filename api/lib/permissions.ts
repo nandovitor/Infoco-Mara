@@ -1,4 +1,3 @@
-
 import { PermissionSet, UserRole } from './types.js';
 
 export const PERMISSIONS: Record<UserRole, PermissionSet> = {
