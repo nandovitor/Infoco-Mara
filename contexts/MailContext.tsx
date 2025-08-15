@@ -1,8 +1,7 @@
 
-
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { ZohoTokenData, ZohoAccountInfo, ZohoEmailListItem, ZohoEmail, AttachmentPayload } from '../types';
+import { ZohoTokenData, ZohoAccountInfo, ZohoEmailListItem, ZohoEmail, AttachmentPayload, ZohoTokenPayload } from '../types';
 import { handleApiResponse } from '../utils/utils';
 
 interface MailContextType {
@@ -13,7 +12,7 @@ interface MailContextType {
     error: string | null;
     connect: () => void;
     disconnect: () => void;
-    saveTokens: (params: URLSearchParams) => void;
+    saveTokens: (tokenPayload: ZohoTokenPayload) => void;
     listEmails: () => Promise<ZohoEmailListItem[]>;
     getEmailDetails: (messageId: string) => Promise<ZohoEmail | null>;
     sendEmail: (to: string, subject: string, content: string, attachments?: File[]) => Promise<void>;
@@ -102,21 +101,19 @@ export const MailProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const saveTokens = (params: URLSearchParams) => {
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const expiresIn = params.get('expires_in');
-
-        if (accessToken && expiresIn) {
-            const expiresAt = Date.now() + (parseInt(expiresIn, 10) - 300) * 1000;
+    const saveTokens = (tokenPayload: ZohoTokenPayload) => {
+        const { access_token, refresh_token, expires_in } = tokenPayload;
+        
+        if (access_token && expires_in) {
+            const expiresAt = Date.now() + (expires_in - 300) * 1000;
             setTokens({
-                access_token: accessToken,
-                refresh_token: refreshToken || tokens?.refresh_token || '',
+                access_token: access_token,
+                refresh_token: refresh_token || tokens?.refresh_token || '',
                 expires_at: expiresAt,
             });
             setError(null);
         } else {
-            setError(params.get('error') || 'Falha na autenticação com o Zoho.');
+            setError('Falha ao processar os tokens recebidos do servidor.');
         }
     };
 
