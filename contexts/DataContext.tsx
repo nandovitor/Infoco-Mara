@@ -1,10 +1,11 @@
 
 
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import {
     Employee, Task, FinanceData, Permissions, EmployeeExpense, InternalExpense, Asset, ManagedFile,
     PaymentNote, Notification, Supplier, Transaction, PayrollRecord, LeaveRequest, MaintenanceRecord,
-    UpdatePost, ExternalSystem, NewsArticle, GroundingSource, Profile
+    UpdatePost, ExternalSystem, NewsArticle, GroundingSource, Profile, QuoteFolder, QuoteFile
 } from '../types';
 import { handleApiResponse } from '../utils/utils';
 import { DEFAULT_PERMISSIONS } from '../constants';
@@ -27,13 +28,15 @@ interface AppData {
     profiles: Profile[];
     updatePosts: UpdatePost[];
     externalSystems: ExternalSystem[];
+    quoteFolders: QuoteFolder[];
+    quoteFiles: QuoteFile[];
     loginScreenImageUrl: string | null;
 }
 
 const initialData: AppData = {
     employees: [], tasks: [], financeData: [], permissions: DEFAULT_PERMISSIONS, employeeExpenses: [], internalExpenses: [], assets: [],
     managedFiles: [], paymentNotes: [], notifications: [], suppliers: [], transactions: [], payrolls: [], leaveRequests: [],
-    profiles: [], updatePosts: [], externalSystems: [], loginScreenImageUrl: null,
+    profiles: [], updatePosts: [], externalSystems: [], quoteFolders: [], quoteFiles: [], loginScreenImageUrl: null,
 };
 
 interface DataContextType extends AppData {
@@ -86,6 +89,11 @@ interface DataContextType extends AppData {
   addExternalSystem: (system: Omit<ExternalSystem, 'id'>) => Promise<boolean>;
   updateExternalSystem: (system: ExternalSystem) => Promise<boolean>;
   deleteExternalSystem: (systemId: number) => Promise<boolean>;
+  addQuoteFolder: (folder: Omit<QuoteFolder, 'id'>) => Promise<boolean>;
+  updateQuoteFolder: (folder: QuoteFolder) => Promise<boolean>;
+  deleteQuoteFolder: (folderId: number) => Promise<boolean>;
+  addQuoteFile: (file: Omit<QuoteFile, 'id' | 'createdAt'>) => Promise<boolean>;
+  deleteQuoteFile: (fileId: number) => Promise<boolean>;
   news: NewsArticle[];
   newsSources: GroundingSource[];
   isNewsLoading: boolean;
@@ -173,6 +181,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         managedFiles: createCrud<ManagedFile>('managedFiles'),
         paymentNotes: createCrud<PaymentNote>('paymentNotes'),
         notifications: createCrud<Notification>('notifications'),
+        quoteFolders: createCrud<QuoteFolder>('quoteFolders'),
+        quoteFiles: createCrud<QuoteFile>('quoteFiles'),
     };
     
     // --- Specific Handlers ---
@@ -235,6 +245,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markAllNotificationsAsRead,
         deleteNotification: crudHandlers.notifications.remove,
         addMaintenanceRecord,
+        addQuoteFolder: crudHandlers.quoteFolders.add,
+        updateQuoteFolder: crudHandlers.quoteFolders.update,
+        deleteQuoteFolder: crudHandlers.quoteFolders.remove,
+        addQuoteFile: crudHandlers.quoteFiles.add,
+        deleteQuoteFile: crudHandlers.quoteFiles.remove,
         updatePermissions: async (role, key, value) => updateConfig('permissions', {...appData.permissions, [role]: {...appData.permissions[role], [key]: value }}),
         updateLoginScreenImage: async (url) => updateConfig('loginScreenImageUrl', url),
         news, newsSources, isNewsLoading, newsError, fetchNews,
