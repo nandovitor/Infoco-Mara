@@ -56,7 +56,7 @@ const QuotesTab: React.FC = () => {
     } = useData();
     
     const [selectedFolder, setSelectedFolder] = useState<QuoteFolder | null>(null);
-    const [folderToEdit, setFolderToEdit] = useState<QuoteFolder | null>(null);
+    const [folderModal, setFolderModal] = useState<{ isOpen: boolean; data?: Partial<QuoteFolder> }>({ isOpen: false });
     const [folderToDelete, setFolderToDelete] = useState<QuoteFolder | null>(null);
     const [fileToDelete, setFileToDelete] = useState<QuoteFile | null>(null);
     const [pdfToView, setPdfToView] = useState<QuoteFile | null>(null);
@@ -69,13 +69,19 @@ const QuotesTab: React.FC = () => {
         return quoteFiles.filter(file => file.folderId === selectedFolder.id);
     }, [quoteFiles, selectedFolder]);
 
+    const openNewFolderModal = () => setFolderModal({ isOpen: true, data: { name: '' } });
+    const openEditFolderModal = (folder: QuoteFolder) => setFolderModal({ isOpen: true, data: folder });
+    const closeFolderModal = () => setFolderModal({ isOpen: false });
+
     const handleSaveFolder = (name: string) => {
-        if (folderToEdit && folderToEdit.id) {
-            updateQuoteFolder({ ...folderToEdit, name });
+        const { data: folderData } = folderModal;
+        // Check if folderData exists and has an id for update, otherwise it's a new folder
+        if (folderData?.id) {
+            updateQuoteFolder({ ...folderData, name } as QuoteFolder);
         } else {
             addQuoteFolder({ name });
         }
-        setFolderToEdit(null);
+        closeFolderModal();
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,7 +143,6 @@ const QuotesTab: React.FC = () => {
     
     const handleConfirmDeleteFolder = async () => {
         if (folderToDelete) {
-            // Note: Files are deleted via 'onDelete: cascade' in the database schema.
             await deleteQuoteFolder(folderToDelete.id);
             if (selectedFolder?.id === folderToDelete.id) {
                 setSelectedFolder(null);
@@ -170,7 +175,7 @@ const QuotesTab: React.FC = () => {
             <Card>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-gray-800">Gerenciamento de Cotações</h2>
-                    <Button onClick={() => setFolderToEdit({} as QuoteFolder)}><PlusCircle size={16} className="mr-2" />Nova Pasta</Button>
+                    <Button onClick={openNewFolderModal}><PlusCircle size={16} className="mr-2" />Nova Pasta</Button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {quoteFolders.map(folder => (
@@ -183,7 +188,7 @@ const QuotesTab: React.FC = () => {
                                 </div>
                             </button>
                             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t">
-                                <Button size="sm" variant="secondary" className="p-1 h-auto" onClick={() => setFolderToEdit(folder)}><Edit size={14}/></Button>
+                                <Button size="sm" variant="secondary" className="p-1 h-auto" onClick={() => openEditFolderModal(folder)}><Edit size={14}/></Button>
                                 <Button size="sm" variant="danger" className="p-1 h-auto" onClick={() => setFolderToDelete(folder)}><Trash2 size={14}/></Button>
                             </div>
                         </div>
@@ -207,10 +212,10 @@ const QuotesTab: React.FC = () => {
             )}
 
             <FolderFormModal
-                isOpen={!!folderToEdit}
-                onClose={() => setFolderToEdit(null)}
+                isOpen={folderModal.isOpen}
+                onClose={closeFolderModal}
                 onSave={handleSaveFolder}
-                initialName={folderToEdit?.name}
+                initialName={folderModal.data?.name}
             />
 
             <DeleteConfirmationModal
