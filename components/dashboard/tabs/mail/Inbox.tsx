@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useMail } from '../../../../contexts/MailContext';
 import { ZohoEmailListItem } from '../../../../types';
@@ -25,7 +24,8 @@ const Inbox: React.FC<InboxProps> = ({ onEmailSelect, selectedEmailId }) => {
             const fetchedEmails = await listEmails();
             setEmails(fetchedEmails);
         } catch (err: any) {
-            setError(err.message || 'Ocorreu um erro desconhecido.');
+            // Exibe o erro detalhado da API do Zoho se disponível, para um melhor diagnóstico.
+            setError(err.details || err.message || 'Ocorreu um erro desconhecido.');
         } finally {
             setIsLoading(false);
         }
