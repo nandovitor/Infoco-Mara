@@ -1,4 +1,4 @@
-import { PermissionSet, UserRole } from './types.js';
+import { PermissionSet, UserRole } from '../../types.js';
 
 export const PERMISSIONS: Record<UserRole, PermissionSet> = {
   admin: { canViewDashboard: true, canManageDocuments: true, canManageEmployees: true, canManageTasks: true, canManageFinance: true, canManageNotes: true, canManageHR: true, canViewReports: true, canManageInternalExpenses: true, canManageAssets: true, canManageSettings: true, canManageUsers: true, canPostUpdates: true, canManageEmail: true },
