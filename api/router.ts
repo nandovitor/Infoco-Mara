@@ -376,7 +376,7 @@ async function geminiRouter(req: any, res: any) {
  * Handles error responses from the Zoho API in a robust way,
  * preventing server crashes on non-JSON or unexpected error formats.
  */
-async function handleZohoError(response: Response, defaultMessage: string): Promise<never> {
+async function handleZohoError(response: Response, defaultMessage: string): Promise<Error> {
     let errorMessage = defaultMessage;
     try {
         const errorData: any = await response.json();
@@ -392,209 +392,207 @@ async function handleZohoError(response: Response, defaultMessage: string): Prom
         console.error("Zoho API returned a non-JSON error:", textError.substring(0, 500));
         errorMessage = `${defaultMessage}. O servidor do Zoho retornou um erro inesperado. (Status: ${response.status})`;
     }
-    throw new Error(errorMessage);
+    return new Error(errorMessage);
 }
 
 
 async function zohoRouter(req: any, res: any, userRole?: UserRole) {
     const { action } = req.query;
-
-    if (req.method === 'GET' && action === 'checkConfig') {
-        if (!checkPermission(userRole, 'mail', 'view')) {
-            return res.status(403).json({ error: 'Acesso negado. Apenas usuários autorizados podem verificar a configuração.' });
-        }
-        const configForDisplay = {
-            clientId: zohoConfig.clientId || 'NÃO DEFINIDO',
-            clientSecret: zohoConfig.clientSecret ? `${zohoConfig.clientSecret.substring(0, 4)}...${zohoConfig.clientSecret.slice(-4)}` : 'NÃO DEFINIDO',
-            redirectUri: zohoConfig.redirectUri || 'NÃO DEFINIDO',
-            accountsUrl: zohoConfig.accountsUrl,
-            apiBaseUrl: zohoConfig.apiBaseUrl,
-            scopes: zohoConfig.scopes,
-        };
-        return res.status(200).json(configForDisplay);
-    }
     
     try {
+        if (req.method === 'GET' && action === 'checkConfig') {
+            if (!checkPermission(userRole, 'mail', 'view')) {
+                return res.status(403).json({ error: 'Acesso negado. Apenas usuários autorizados podem verificar a configuração.' });
+            }
+            const configForDisplay = {
+                clientId: zohoConfig.clientId || 'NÃO DEFINIDO',
+                clientSecret: zohoConfig.clientSecret ? `${zohoConfig.clientSecret.substring(0, 4)}...${zohoConfig.clientSecret.slice(-4)}` : 'NÃO DEFINIDO',
+                redirectUri: zohoConfig.redirectUri || 'NÃO DEFINIDO',
+                accountsUrl: zohoConfig.accountsUrl,
+                apiBaseUrl: zohoConfig.apiBaseUrl,
+                scopes: zohoConfig.scopes,
+            };
+            return res.status(200).json(configForDisplay);
+        }
+        
         checkZohoCredentials();
-    } catch (error: any) {
-        console.error("Zoho configuration error:", error.message);
-        return res.status(503).json({ 
-            error: 'O serviço de Email não está configurado no servidor.', 
-            details: error.message 
-        });
-    }
 
+        if (req.method === 'GET' && action === 'getAuthUrl') {
+            const params = new URLSearchParams({
+                scope: zohoConfig.scopes,
+                client_id: zohoConfig.clientId!,
+                response_type: 'code',
+                redirect_uri: zohoConfig.redirectUri!,
+                access_type: 'offline',
+                prompt: 'consent'
+            });
+            const authUrl = `${zohoConfig.accountsUrl}/oauth/v2/auth?${params.toString()}`;
+            return res.status(200).json({ authUrl });
+        }
 
-    if (req.method === 'GET' && action === 'getAuthUrl') {
-        const params = new URLSearchParams({
-            scope: zohoConfig.scopes,
-            client_id: zohoConfig.clientId!,
-            response_type: 'code',
-            redirect_uri: zohoConfig.redirectUri!,
-            access_type: 'offline',
-            prompt: 'consent'
-        });
-        const authUrl = `${zohoConfig.accountsUrl}/oauth/v2/auth?${params.toString()}`;
-        return res.status(200).json({ authUrl });
-    }
+        if (req.method === 'POST' && action === 'exchangeCode') {
+            const { code } = req.body;
+            if (!code) return res.status(400).json({ error: 'Código de autorização é obrigatório.' });
 
-    if (req.method === 'POST' && action === 'exchangeCode') {
-        const { code } = req.body;
-        if (!code) return res.status(400).json({ error: 'Código de autorização é obrigatório.' });
+            const params = new URLSearchParams({ code, client_id: zohoConfig.clientId!, client_secret: zohoConfig.clientSecret!, redirect_uri: zohoConfig.redirectUri!, grant_type: 'authorization_code' });
+            const response = await fetch(`${zohoConfig.accountsUrl}/oauth/v2/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() });
+            
+            if (!response.ok) {
+                throw await handleZohoError(response, 'Falha ao trocar o código pelo token.');
+            }
+            const tokenData = await response.json() as ZohoTokenPayload;
+            return res.status(200).json(tokenData);
+        }
 
-        const params = new URLSearchParams({ code, client_id: zohoConfig.clientId!, client_secret: zohoConfig.clientSecret!, redirect_uri: zohoConfig.redirectUri!, grant_type: 'authorization_code' });
-        const response = await fetch(`${zohoConfig.accountsUrl}/oauth/v2/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() });
+        if (req.method === 'POST' && action === 'refreshToken') {
+            const { refresh_token } = req.body;
+            if (!refresh_token) return res.status(400).json({ error: 'Refresh token é obrigatório.' });
+
+            const params = new URLSearchParams({ refresh_token, client_id: zohoConfig.clientId!, client_secret: zohoConfig.clientSecret!, grant_type: 'refresh_token' });
+            const response = await fetch(`${zohoConfig.accountsUrl}/oauth/v2/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() });
+            
+            if (!response.ok) {
+                throw await handleZohoError(response, 'Falha ao renovar o token.');
+            }
+            const tokenData = await response.json() as { access_token: string; expires_in: number };
+            return res.status(200).json({ access_token: tokenData.access_token, expires_in: tokenData.expires_in });
+        }
+
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Token de autorização ausente ou malformado.' });
+        const accessToken = authHeader.split(' ')[1];
         
-        if (!response.ok) {
-            await handleZohoError(response, 'Falha ao trocar o código pelo token.');
-        }
-        const tokenData = await response.json() as ZohoTokenPayload;
-        return res.status(200).json(tokenData);
-    }
+        const getAccountId = async (token: string) => {
+            const response = await fetch(`${zohoConfig.apiBaseUrl}/accounts`, { headers: { 'Authorization': `Zoho-oauthtoken ${token}` } });
+            if (!response.ok) {
+                throw await handleZohoError(response, 'Falha ao buscar a conta do Zoho.');
+            }
+            const data = await response.json() as { data: { accountId: string }[] };
+            if (!data?.data?.[0]?.accountId) throw new Error('accountId não encontrado na resposta do Zoho.');
+            return data.data[0].accountId;
+        };
 
-    if (req.method === 'POST' && action === 'refreshToken') {
-        const { refresh_token } = req.body;
-        if (!refresh_token) return res.status(400).json({ error: 'Refresh token é obrigatório.' });
+        if (req.method === 'GET' && action === 'listEmails') {
+            const accountId = await getAccountId(accessToken);
+            const params = new URLSearchParams({ limit: '50', sortorder: 'desc', status: 'all' });
+            const emailResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/view?${params.toString()}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
+            
+            if (!emailResponse.ok) {
+                throw await handleZohoError(emailResponse, 'Falha ao buscar os e-mails.');
+            }
+            const emailData = await emailResponse.json() as { data: any[] };
 
-        const params = new URLSearchParams({ refresh_token, client_id: zohoConfig.clientId!, client_secret: zohoConfig.clientSecret!, grant_type: 'refresh_token' });
-        const response = await fetch(`${zohoConfig.accountsUrl}/oauth/v2/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() });
-        
-        if (!response.ok) {
-            await handleZohoError(response, 'Falha ao renovar o token.');
-        }
-        const tokenData = await response.json() as { access_token: string; expires_in: number };
-        return res.status(200).json({ access_token: tokenData.access_token, expires_in: tokenData.expires_in });
-    }
+            const emailList = Array.isArray(emailData.data) ? emailData.data : [];
+            const simplifiedEmails = emailList.flatMap((email: any) => {
+                try {
+                    if (!email || typeof email !== 'object') {
+                        console.warn('Item inválido na lista de e-mails do Zoho foi ignorado:', email);
+                        return [];
+                    }
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Token de autorização ausente ou malformado.' });
-    const accessToken = authHeader.split(' ')[1];
-    
-    const getAccountId = async (token: string) => {
-        const response = await fetch(`${zohoConfig.apiBaseUrl}/accounts`, { headers: { 'Authorization': `Zoho-oauthtoken ${token}` } });
-        if (!response.ok) {
-            await handleZohoError(response, 'Falha ao buscar a conta do Zoho.');
-        }
-        const data = await response.json() as { data: { accountId: string }[] };
-        if (!data?.data?.[0]?.accountId) throw new Error('accountId não encontrado na resposta do Zoho.');
-        return data.data[0].accountId;
-    };
-
-    if (req.method === 'GET' && action === 'listEmails') {
-        const accountId = await getAccountId(accessToken);
-        const params = new URLSearchParams({ limit: '50', sortorder: 'desc', status: 'all' });
-        const emailResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/view?${params.toString()}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
-        
-        if (!emailResponse.ok) {
-            await handleZohoError(emailResponse, 'Falha ao buscar os e-mails.');
-        }
-        const emailData = await emailResponse.json() as { data: any[] };
-
-        const emailList = Array.isArray(emailData.data) ? emailData.data : [];
-        const simplifiedEmails = emailList.flatMap((email: any) => {
-            try {
-                if (!email || typeof email !== 'object') {
-                    console.warn('Item inválido na lista de e-mails do Zoho foi ignorado:', email);
+                    const from = email.from || { emailAddress: 'desconhecido@email.com', name: 'Remetente Desconhecido' };
+                    const to = Array.isArray(email.toAddress) ? email.toAddress.map((t: any) => ({ emailAddress: t?.address || '', name: t?.name || '' })) : [];
+                    const receivedTimestamp = Number(email.receivedTime);
+                    const receivedTime = !isNaN(receivedTimestamp) && receivedTimestamp > 0 ? new Date(receivedTimestamp).toISOString() : new Date().toISOString();
+                    
+                    return [{
+                        messageId: email.messageId || `missing-id-${Math.random()}`,
+                        from, to,
+                        subject: email.subject || '(Sem assunto)',
+                        summary: email.summary || '',
+                        receivedTime,
+                        isRead: !!email.isRead,
+                    }];
+                } catch (e: any) {
+                    console.error('Falha ao processar um e-mail da lista do Zoho. E-mail problemático:', email, 'Erro:', e.message);
                     return [];
                 }
+            });
+            return res.status(200).json({ emails: simplifiedEmails, accountId });
+        }
 
-                const from = email.from || { emailAddress: 'desconhecido@email.com', name: 'Remetente Desconhecido' };
-                const to = Array.isArray(email.toAddress) ? email.toAddress.map((t: any) => ({ emailAddress: t?.address || '', name: t?.name || '' })) : [];
-                const receivedTimestamp = Number(email.receivedTime);
-                const receivedTime = !isNaN(receivedTimestamp) && receivedTimestamp > 0 ? new Date(receivedTimestamp).toISOString() : new Date().toISOString();
-                
-                return [{
-                    messageId: email.messageId || `missing-id-${Math.random()}`,
-                    from, to,
-                    subject: email.subject || '(Sem assunto)',
-                    summary: email.summary || '',
-                    receivedTime,
-                    isRead: !!email.isRead,
-                }];
-            } catch (e: any) {
-                console.error('Falha ao processar um e-mail da lista do Zoho. E-mail problemático:', email, 'Erro:', e.message);
-                return [];
+        if (req.method === 'GET' && action === 'getEmail') {
+            const { messageId, accountId } = req.query;
+            if (!messageId || !accountId) return res.status(400).json({ error: 'messageId e accountId são obrigatórios.' });
+            
+            const emailResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/${messageId}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
+            if (!emailResponse.ok) {
+                throw await handleZohoError(emailResponse, 'Falha ao buscar o conteúdo do e-mail.');
             }
-        });
-        return res.status(200).json({ emails: simplifiedEmails, accountId });
-    }
-
-    if (req.method === 'GET' && action === 'getEmail') {
-        const { messageId, accountId } = req.query;
-        if (!messageId || !accountId) return res.status(400).json({ error: 'messageId e accountId são obrigatórios.' });
+            const emailData = await emailResponse.json() as { data: any };
+            const email = { messageId: emailData.data.messageId, from: emailData.data.from, to: emailData.data.toAddress.map((t: any) => ({ emailAddress: t.address, name: t.name })), subject: emailData.data.subject || '(Sem assunto)', summary: emailData.data.summary || '', receivedTime: new Date(Number(emailData.data.receivedTime)).toISOString(), isRead: emailData.data.isRead, content: emailData.data.content || 'Este e-mail não possui conteúdo para exibir.', attachments: emailData.data.attachments || [], };
+            return res.status(200).json(email);
+        }
         
-        const emailResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/${messageId}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
-        if (!emailResponse.ok) {
-            await handleZohoError(emailResponse, 'Falha ao buscar o conteúdo do e-mail.');
+        if (req.method === 'POST' && action === 'sendEmail') {
+            const { accountId, fromAddress, toAddress, subject, content, attachments = [] } = req.body as { accountId: string; fromAddress: string; toAddress: string; subject: string; content: string; attachments: AttachmentPayload[] };
+            if (!accountId || !fromAddress || !toAddress || !subject || !content) return res.status(400).json({ error: 'Campos obrigatórios ausentes para enviar o e-mail.' });
+
+            const boundary = `----InfocoBoundary${randomBytes(16).toString('hex')}`;
+            const headers = { 'Authorization': `Zoho-oauthtoken ${accessToken}`, 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+            const emailDetails = { fromAddress, toAddress, subject, content, mailFormat: "html", askReceipt: "no" };
+            
+            let bodyParts: (string | Buffer)[] = [];
+            bodyParts.push(`--${boundary}\r\n`, `Content-Disposition: form-data; name="jsonBody"\r\n\r\n`, `${JSON.stringify(emailDetails)}\r\n`);
+            for (const attachment of attachments) {
+                bodyParts.push(`--${boundary}\r\n`, `Content-Disposition: form-data; name="attachment"; filename="${attachment.fileName}"\r\n`, `Content-Type: ${attachment.mimeType}\r\n`, `Content-Transfer-Encoding: base64\r\n\r\n`, Buffer.from(attachment.content, 'base64'), `\r\n`);
+            }
+            bodyParts.push(`--${boundary}--\r\n`);
+            
+            const finalBody = Buffer.concat(bodyParts.map(p => Buffer.isBuffer(p) ? p : Buffer.from(p)));
+            const sendResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages`, { method: 'POST', headers, body: finalBody });
+            
+            if (!sendResponse.ok) {
+                throw await handleZohoError(sendResponse, 'Falha ao enviar o e-mail.');
+            }
+            return res.status(200).json({ success: true, message: 'E-mail enviado com sucesso!' });
         }
-        const emailData = await emailResponse.json() as { data: any };
-        const email = { messageId: emailData.data.messageId, from: emailData.data.from, to: emailData.data.toAddress.map((t: any) => ({ emailAddress: t.address, name: t.name })), subject: emailData.data.subject || '(Sem assunto)', summary: emailData.data.summary || '', receivedTime: new Date(Number(emailData.data.receivedTime)).toISOString(), isRead: emailData.data.isRead, content: emailData.data.content || 'Este e-mail não possui conteúdo para exibir.', attachments: emailData.data.attachments || [], };
-        return res.status(200).json(email);
+
+        if (req.method === 'DELETE' && action === 'deleteEmail') {
+            const { accountId, messageId } = req.body;
+            if (!accountId || !messageId) return res.status(400).json({ error: 'accountId e messageId são obrigatórios para exclusão.' });
+
+            const deleteResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/${messageId}`, { method: 'DELETE', headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
+            if (!deleteResponse.ok) {
+                throw await handleZohoError(deleteResponse, 'Falha ao excluir o e-mail.');
+            }
+            return res.status(204).send();
+        }
+
+        if (req.method === 'GET' && action === 'downloadAttachment') {
+            const { messageId, accountId, attachmentId, fileName } = req.query;
+            if (!messageId || !accountId || !attachmentId) return res.status(400).json({ error: 'messageId, accountId e attachmentId são obrigatórios.' });
+
+            const attachmentResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/${messageId}/attachments/${attachmentId}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
+            if (!attachmentResponse.ok) {
+                throw await handleZohoError(attachmentResponse, 'Falha ao baixar anexo.');
+            }
+
+            const contentType = attachmentResponse.headers.get('Content-Type') || 'application/octet-stream';
+            const contentDisposition = `attachment; filename="${encodeURIComponent(fileName || 'download')}"`;
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', contentDisposition);
+
+            if(attachmentResponse.body) {
+               const reader = attachmentResponse.body.getReader();
+               const readableStream = new Readable({
+                    async read() {
+                        const { done, value } = await reader.read();
+                        if (done) { this.push(null); } else { this.push(Buffer.from(value)); }
+                    }
+               });
+               readableStream.pipe(res);
+            } else {
+                return res.status(500).json({ error: "O corpo da resposta do anexo está vazio." });
+            }
+            return;
+        }
+
+        return res.status(404).json({ error: `Unknown action for Zoho: ${action}` });
+
+    } catch (error: any) {
+        console.error(`Zoho API Error (action: ${action}):`, error.message);
+        // Retorna um erro com um status que indica um problema com o serviço externo ou a requisição
+        return res.status(424).json({ error: 'Falha na comunicação com a API do Zoho', details: error.message });
     }
-    
-    if (req.method === 'POST' && action === 'sendEmail') {
-        const { accountId, fromAddress, toAddress, subject, content, attachments = [] } = req.body as { accountId: string; fromAddress: string; toAddress: string; subject: string; content: string; attachments: AttachmentPayload[] };
-        if (!accountId || !fromAddress || !toAddress || !subject || !content) return res.status(400).json({ error: 'Campos obrigatórios ausentes para enviar o e-mail.' });
-
-        const boundary = `----InfocoBoundary${randomBytes(16).toString('hex')}`;
-        const headers = { 'Authorization': `Zoho-oauthtoken ${accessToken}`, 'Content-Type': `multipart/form-data; boundary=${boundary}` };
-        const emailDetails = { fromAddress, toAddress, subject, content, mailFormat: "html", askReceipt: "no" };
-        
-        let bodyParts: (string | Buffer)[] = [];
-        bodyParts.push(`--${boundary}\r\n`, `Content-Disposition: form-data; name="jsonBody"\r\n\r\n`, `${JSON.stringify(emailDetails)}\r\n`);
-        for (const attachment of attachments) {
-            bodyParts.push(`--${boundary}\r\n`, `Content-Disposition: form-data; name="attachment"; filename="${attachment.fileName}"\r\n`, `Content-Type: ${attachment.mimeType}\r\n`, `Content-Transfer-Encoding: base64\r\n\r\n`, Buffer.from(attachment.content, 'base64'), `\r\n`);
-        }
-        bodyParts.push(`--${boundary}--\r\n`);
-        
-        const finalBody = Buffer.concat(bodyParts.map(p => Buffer.isBuffer(p) ? p : Buffer.from(p)));
-        const sendResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages`, { method: 'POST', headers, body: finalBody });
-        
-        if (!sendResponse.ok) {
-            await handleZohoError(sendResponse, 'Falha ao enviar o e-mail.');
-        }
-        return res.status(200).json({ success: true, message: 'E-mail enviado com sucesso!' });
-    }
-
-    if (req.method === 'DELETE' && action === 'deleteEmail') {
-        const { accountId, messageId } = req.body;
-        if (!accountId || !messageId) return res.status(400).json({ error: 'accountId e messageId são obrigatórios para exclusão.' });
-
-        const deleteResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/${messageId}`, { method: 'DELETE', headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
-        if (!deleteResponse.ok) {
-            await handleZohoError(deleteResponse, 'Falha ao excluir o e-mail.');
-        }
-        return res.status(204).send();
-    }
-
-    if (req.method === 'GET' && action === 'downloadAttachment') {
-        const { messageId, accountId, attachmentId, fileName } = req.query;
-        if (!messageId || !accountId || !attachmentId) return res.status(400).json({ error: 'messageId, accountId e attachmentId são obrigatórios.' });
-
-        const attachmentResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/${messageId}/attachments/${attachmentId}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
-        if (!attachmentResponse.ok) {
-            await handleZohoError(attachmentResponse, 'Falha ao baixar anexo.');
-        }
-
-        const contentType = attachmentResponse.headers.get('Content-Type') || 'application/octet-stream';
-        const contentDisposition = `attachment; filename="${encodeURIComponent(fileName || 'download')}"`;
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', contentDisposition);
-
-        if(attachmentResponse.body) {
-           const reader = attachmentResponse.body.getReader();
-           const readableStream = new Readable({
-                async read() {
-                    const { done, value } = await reader.read();
-                    if (done) { this.push(null); } else { this.push(Buffer.from(value)); }
-                }
-           });
-           readableStream.pipe(res);
-        } else {
-            return res.status(500).json({ error: "O corpo da resposta do anexo está vazio." });
-        }
-        return;
-    }
-
-    return res.status(404).json({ error: `Unknown action for Zoho: ${action}` });
 }
