@@ -94,9 +94,16 @@ export const MailProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError(null);
         try {
             const data = await apiRequest('zoho', 'getAuthUrl') as { authUrl: string };
-            window.location.href = data.authUrl;
+            if (data && data.authUrl && typeof data.authUrl === 'string') {
+                window.location.href = data.authUrl;
+            } else {
+                console.error("Resposta inválida do servidor para getAuthUrl:", data);
+                throw new Error("Não foi possível obter a URL de autenticação do servidor. Verifique os logs do servidor.");
+            }
         } catch (err: any) {
-            setError(err.message);
+             // Se o erro do servidor tiver detalhes, mostre-os.
+            const errorMessage = err.details ? `${err.message} Detalhes: ${err.details}` : err.message;
+            setError(errorMessage);
             setIsConnecting(false);
         }
     };
