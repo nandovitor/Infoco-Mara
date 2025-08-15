@@ -462,7 +462,7 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         if (!response.ok) {
             await handleZohoError(response, 'Falha ao renovar o token.');
         }
-        const tokenData = await response.json();
+        const tokenData = await response.json() as { access_token: string; expires_in: number };
         return res.status(200).json({ access_token: tokenData.access_token, expires_in: tokenData.expires_in });
     }
 
