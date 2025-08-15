@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import Card from '../../ui/Card';
@@ -64,7 +65,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ setActiveTab }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div id="tour-step-2-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard icon={Users} title="Funcionários Ativos" value={stats.employees} color="border-blue-500" />
         <StatCard icon={ListChecks} title="Tarefas Totais" value={stats.totalTasks} color="border-purple-500" />
         <StatCard icon={CheckCircle} title="Tarefas Concluídas" value={stats.completedTasks} color="border-green-500" />
@@ -72,7 +73,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ setActiveTab }) => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2">
+        <div id="tour-step-3-calendar" className="lg:col-span-2">
             <Calendar 
                 title="Calendário de Eventos" 
                 events={calendarEvents} 
