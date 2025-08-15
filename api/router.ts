@@ -36,7 +36,7 @@ const zohoConfig = {
     redirectUri: process.env.ZOHO_REDIRECT_URI?.replace(/\/$/, ''), // Remove trailing slash if present
     scopes: ['ZohoMail.accounts.READ', 'ZohoMail.messages.ALL', 'ZohoMail.messages.CREATE'].join(','),
     accountsUrl: process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.com',
-    apiBaseUrl: 'https://mail.zoho.com/api',
+    apiBaseUrl: process.env.ZOHO_API_BASE_URL || 'https://mail.zoho.com/api',
 };
 
 function checkZohoCredentials() {
@@ -136,7 +136,7 @@ export default async function handler(req: any, res: any) {
         }
         
         if (entity === 'zoho') {
-            return await zohoRouter(req, res);
+            return await zohoRouter(req, res, userRole);
         }
         
         if (entity === 'config') {
@@ -371,7 +371,24 @@ async function geminiRouter(req: any, res: any) {
 }
 
 // --- Zoho Router ---
-async function zohoRouter(req: any, res: any) {
+async function zohoRouter(req: any, res: any, userRole?: UserRole) {
+    const { action } = req.query;
+
+    if (req.method === 'GET' && action === 'checkConfig') {
+        if (!checkPermission(userRole, 'mail', 'view')) {
+            return res.status(403).json({ error: 'Acesso negado. Apenas usuários autorizados podem verificar a configuração.' });
+        }
+        const configForDisplay = {
+            clientId: zohoConfig.clientId || 'NÃO DEFINIDO',
+            clientSecret: zohoConfig.clientSecret ? `${zohoConfig.clientSecret.substring(0, 4)}...${zohoConfig.clientSecret.slice(-4)}` : 'NÃO DEFINIDO',
+            redirectUri: zohoConfig.redirectUri || 'NÃO DEFINIDO',
+            accountsUrl: zohoConfig.accountsUrl,
+            apiBaseUrl: zohoConfig.apiBaseUrl,
+            scopes: zohoConfig.scopes,
+        };
+        return res.status(200).json(configForDisplay);
+    }
+    
     try {
         checkZohoCredentials();
     } catch (error: any) {
@@ -382,7 +399,6 @@ async function zohoRouter(req: any, res: any) {
         });
     }
 
-    const { action } = req.query;
 
     if (req.method === 'GET' && action === 'getAuthUrl') {
         const params = new URLSearchParams({ scope: zohoConfig.scopes, client_id: zohoConfig.clientId!, response_type: 'token', redirect_uri: zohoConfig.redirectUri!, access_type: 'offline', prompt: 'consent' });
