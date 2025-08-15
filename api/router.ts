@@ -102,7 +102,7 @@ export default async function handler(req: any, res: any) {
         let userRole: UserRole | undefined = undefined;
 
         const isPublicEndpoint = (entity === 'gemini') ||
-                             (entity === 'zoho') ||
+                             (entity === 'zoho' && (action === 'getAuthUrl' || action === 'refreshToken')) ||
                              (entity === 'auth' && action === 'login');
 
         if (!isPublicEndpoint) {
