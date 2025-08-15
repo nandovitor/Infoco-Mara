@@ -470,7 +470,28 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         const emailResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/view?${params.toString()}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
         if (!emailResponse.ok) { const errorData = await emailResponse.json() as { data?: { message?: string } }; throw new Error(errorData.data?.message || 'Falha ao buscar os e-mails.'); }
         const emailData = await emailResponse.json() as { data: any[] };
-        const simplifiedEmails = emailData.data.map((email: any) => ({ messageId: email.messageId, from: email.from, to: email.toAddress.map((t: any) => ({ emailAddress: t.address, name: t.name })), subject: email.subject || '(Sem assunto)', summary: email.summary || '', receivedTime: new Date(Number(email.receivedTime)).toISOString(), isRead: email.isRead, }));
+
+        const emailList = Array.isArray(emailData.data) ? emailData.data : [];
+        const simplifiedEmails = emailList.map((email: any) => {
+            const from = email.from || { emailAddress: 'desconhecido@email.com', name: 'Remetente Desconhecido' };
+            const to = Array.isArray(email.toAddress) 
+                ? email.toAddress.map((t: any) => ({ emailAddress: t?.address || '', name: t?.name || '' })) 
+                : [];
+            const receivedTimestamp = Number(email.receivedTime);
+            const receivedTime = !isNaN(receivedTimestamp) && receivedTimestamp > 0
+                ? new Date(receivedTimestamp).toISOString()
+                : new Date().toISOString();
+                
+            return {
+                messageId: email.messageId || `missing-id-${Math.random()}`,
+                from: from,
+                to: to,
+                subject: email.subject || '(Sem assunto)',
+                summary: email.summary || '',
+                receivedTime: receivedTime,
+                isRead: !!email.isRead,
+            };
+        });
         return res.status(200).json({ emails: simplifiedEmails, accountId });
     }
 
