@@ -1,10 +1,11 @@
 
 
+
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { cn } from '../../utils/utils';
-import { LayoutDashboard, Users, ListChecks, DollarSign, BarChart2, Building, Landmark, SlidersHorizontal, Handshake, ClipboardList, Archive, Database, ChevronDown, NotebookText, UsersRound, Megaphone, Mail, AppWindow } from 'lucide-react';
+import { LayoutDashboard, Users, ListChecks, DollarSign, BarChart2, Building, Landmark, SlidersHorizontal, Handshake, ClipboardList, Archive, Database, ChevronDown, NotebookText, UsersRound, Megaphone, Mail, AppWindow, ReceiptText } from 'lucide-react';
 import { PermissionSet } from '../../types';
 
 interface SidebarProps {
@@ -31,7 +32,8 @@ const navItems: NavItem[] = [
     icon: Building, 
     permission: 'canManageDocuments', 
     subItems: [
-      { id: 'database', label: 'Base de Dados', icon: Database, permission: 'canManageDocuments' }
+      { id: 'database', label: 'Base de Dados', icon: Database, permission: 'canManageDocuments' },
+      { id: 'quotes', label: 'Cotações', icon: ReceiptText, permission: 'canManageDocuments' },
     ]
   },
   { id: 'employees', label: 'Funcionários', icon: Users, permission: 'canManageEmployees' },
