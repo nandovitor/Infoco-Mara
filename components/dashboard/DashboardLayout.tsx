@@ -1,5 +1,4 @@
 
-
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -39,9 +38,10 @@ const DashboardLayout: React.FC = () => {
   const userPermissions = user ? permissions[user.role] : null;
 
   useEffect(() => {
-    // If the path contains #access_token, it's a callback from Zoho
-    // We switch to the mail tab to let the handler process it.
-    if(window.location.hash.includes('access_token')){
+    // Se a URL contiver o 'code' do Zoho, é um callback de autenticação.
+    // Mudamos para a aba de callback para que o manipulador possa processá-lo.
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('code')) {
       setActiveTab('mail_callback');
     }
   }, []);
