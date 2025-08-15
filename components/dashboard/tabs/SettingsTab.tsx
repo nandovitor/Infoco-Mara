@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { UserRole, PermissionSet, FinanceData, ExternalSystem, ExternalSystemType } from '../../../types';
@@ -309,7 +308,7 @@ const SettingsTab: React.FC = () => {
                                     <div>
                                         <p className="font-semibold">Ponto de Verificação Importante</p>
                                         <p>
-                                            O erro "Cliente Inválido" geralmente ocorre por uma de duas razões:
+                                            O erro "Cliente Inválido" (invalid_client) geralmente ocorre por uma de duas razões:
                                         </p>
                                         <ul className="list-disc pl-5 mt-1 space-y-1">
                                             <li>O <strong>Data Center</strong> está incorreto. Verifique se o domínio no <code>accountsUrl</code> acima (ex: zoho<strong>.com</strong>, zoho<strong>.eu</strong>) corresponde ao da sua conta Zoho. Se for diferente, adicione a variável de ambiente <code>ZOHO_ACCOUNTS_URL</code> no Vercel.</li>
