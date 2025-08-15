@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { UserRole, PermissionSet, FinanceData, ExternalSystem, ExternalSystemType } from '../../../types';
@@ -9,7 +7,7 @@ import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
-import { UploadCloud, Image as ImageIcon, Trash2, Link as LinkIcon, PlusCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Trash2, Link as LinkIcon, PlusCircle, Loader2, HelpCircle } from 'lucide-react';
 import Alert from '../../ui/Alert';
 import Modal from '../../ui/Modal';
 import DataTable, { Column } from '../../ui/DataTable';
@@ -165,6 +163,9 @@ const SettingsTab: React.FC = () => {
     const [editingIntegration, setEditingIntegration] = useState<Partial<ExternalSystem>>({});
     const [deletingIntegrationId, setDeletingIntegrationId] = useState<number | null>(null);
 
+    const [zohoConfig, setZohoConfig] = useState<any>(null);
+    const [isCheckingZoho, setIsCheckingZoho] = useState(false);
+
     const configurableRoles = (Object.keys(permissions) as UserRole[]).filter(role => role !== 'admin');
     const permissionKeys = Object.keys(PERMISSION_LABELS) as Array<keyof PermissionSet>;
 
@@ -245,6 +246,21 @@ const SettingsTab: React.FC = () => {
         { key: 'actions', header: 'Ações', className: 'text-right' }
     ];
 
+    const handleCheckZohoConfig = async () => {
+        setIsCheckingZoho(true);
+        setZohoConfig(null);
+        try {
+            const response = await fetch('/api/router?entity=zoho&action=checkConfig');
+            const data = await handleApiResponse(response);
+            setZohoConfig(data);
+        } catch (error: any) {
+            setZohoConfig({ error: `Falha ao buscar configuração: ${error.message}` });
+        } finally {
+            setIsCheckingZoho(false);
+        }
+    };
+
+
     return (
         <div className="space-y-8">
             <Card>
@@ -269,6 +285,27 @@ const SettingsTab: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </Card>
+
+            <Card>
+                <div className="flex items-center gap-3 mb-2">
+                     <HelpCircle className="w-6 h-6 text-gray-700" />
+                    <h2 className="text-xl font-semibold text-gray-800">Diagnóstico de Integração do Zoho Mail</h2>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">Se a integração com o Zoho Mail não estiver funcionando, use esta ferramenta para verificar se as variáveis de ambiente estão corretas no servidor.</p>
+                <Button onClick={handleCheckZohoConfig} isLoading={isCheckingZoho}>Verificar Configuração do Servidor</Button>
+                {zohoConfig && (
+                     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <h3 className="font-semibold text-gray-800 mb-2">Configuração do Zoho Carregada pelo Servidor:</h3>
+                        {zohoConfig.error ? (
+                            <Alert type="danger" message={zohoConfig.error} />
+                        ) : (
+                            <pre className="text-xs bg-gray-900 text-white p-3 rounded-md overflow-x-auto">
+                                {JSON.stringify(zohoConfig, null, 2)}
+                            </pre>
+                        )}
+                    </div>
+                )}
             </Card>
 
             <Card>
