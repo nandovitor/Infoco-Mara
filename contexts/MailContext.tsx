@@ -76,7 +76,7 @@ export const MailProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const newExpiresAt = Date.now() + (data.expires_in - 300) * 1000;
                 const newTokens = { ...tokens, access_token: data.access_token, expires_at: newExpiresAt };
                 setTokens(newTokens);
-                return newTokens.access_token;
+                return newTokens.access_token; // <-- FIX: Return the new token immediately
 
             } catch (err: any) {
                 console.error("Erro ao renovar token, desconectando:", err);
