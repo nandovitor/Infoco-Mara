@@ -283,3 +283,19 @@ export interface AttachmentPayload {
     mimeType: string;
     content: string; // base64 encoded string
 }
+
+// --- QUOTES (COTAÇÕES) MODULE TYPES ---
+export interface QuoteFolder {
+    id: number;
+    name: string;
+}
+
+export interface QuoteFile {
+    id: number;
+    folderId: number;
+    name: string;
+    type: string;
+    size: number;
+    url: string;
+    createdAt: string; // ISO String
+}
