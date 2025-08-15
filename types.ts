@@ -1,6 +1,5 @@
 
 
-
 export type UserRole = 'admin' | 'coordinator' | 'support' | 'director';
 
 export interface User {
@@ -202,7 +201,7 @@ export interface PayrollRecord {
     benefits: number;
     deductions: number;
     netPay: number;
-    payDate: string; // YYYY-MM-DD
+    payDate: string; // YYYY-DD-MM
 }
 
 export type LeaveType = 'Férias' | 'Licença Médica' | 'Outro';
@@ -243,6 +242,12 @@ export interface GroundingSource {
 }
 
 // --- ZOHO MAIL INTEGRATION TYPES ---
+export interface ZohoTokenPayload {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+}
+
 export interface ZohoTokenData {
     access_token: string;
     refresh_token: string;
