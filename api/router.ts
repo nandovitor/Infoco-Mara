@@ -9,7 +9,7 @@ import type { AttachmentPayload } from './lib/types.js';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { checkPermission } from './lib/permissions.js';
-import type { UserRole } from './lib/types.js';
+import type { UserRole } from '../types.js';
 
 
 // --- Environment Variable Check ---
@@ -33,7 +33,7 @@ function checkEnvVariables() {
 const zohoConfig = {
     clientId: process.env.ZOHO_CLIENT_ID,
     clientSecret: process.env.ZOHO_CLIENT_SECRET,
-    redirectUri: process.env.ZOHO_REDIRECT_URI,
+    redirectUri: process.env.ZOHO_REDIRECT_URI?.replace(/\/$/, ''), // Remove trailing slash if present
     scopes: ['ZohoMail.accounts.READ', 'ZohoMail.messages.ALL', 'ZohoMail.messages.CREATE'].join(','),
     accountsUrl: process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.com',
     apiBaseUrl: 'https://mail.zoho.com/api',
