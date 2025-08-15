@@ -1,4 +1,5 @@
 
+
 import { PermissionSet, UserRole } from '../../types.js';
 
 export const PERMISSIONS: Record<UserRole, PermissionSet> = {
@@ -29,6 +30,8 @@ const ENTITY_PERMISSION_MAP: Record<string, keyof PermissionSet | 'dashboard' | 
     dashboard: 'canViewDashboard',
     settings: 'canManageSettings',
     mail: 'canManageEmail',
+    quoteFolders: 'canManageDocuments',
+    quoteFiles: 'canManageDocuments',
 };
 
 type Action = 'add' | 'update' | 'delete' | 'view';
