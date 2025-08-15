@@ -1,7 +1,7 @@
 
 
 
-import { Employee, Task, FinanceData, Permissions, PermissionSet, UserRole, EmployeeExpense, ExpenseType, PaymentStatus, InternalExpense, InternalExpenseCategory, Asset, AssetStatus, Notification, Supplier, Transaction, PayrollRecord, LeaveRequest, Profile, UpdatePost, ExternalSystem, ExternalSystemType } from './types';
+import { Employee, Task, FinanceData, Permissions, PermissionSet, UserRole, EmployeeExpense, ExpenseType, PaymentStatus, InternalExpense, InternalExpenseCategory, Asset, AssetStatus, Notification, Supplier, Transaction, PayrollRecord, LeaveRequest, Profile, UpdatePost, ExternalSystem, ExternalSystemType, QuoteFolder } from './types';
 
 // IDs são removidos e serão gerados pelo banco de dados. Referências são feitas por email ou índice.
 export const DEFAULT_SYSTEM_USERS: (Omit<Profile, 'id' | 'pfp'> & { password?: string })[] = [
@@ -80,6 +80,11 @@ export const DEFAULT_ASSETS: (Omit<Asset, 'id' | 'assignedToEmployeeId' | 'maint
 export const ASSET_STATUSES: AssetStatus[] = ['Em Uso', 'Em Manutenção', 'Danificado', 'Descartado'];
 
 export const DOCUMENT_FOLDERS = ['Contratos', 'ARPs', 'Minutas', 'QDD', 'TR', 'DFDs'];
+export const DEFAULT_QUOTE_FOLDERS: Omit<QuoteFolder, 'id'>[] = [
+    { name: 'COTAÇÃO' },
+    { name: 'T.R' },
+    { name: 'BOLETIM DE MEDIÇÃO' },
+];
 
 export const DEFAULT_NOTIFICATIONS: Omit<Notification, 'id' | 'date' | 'read'>[] = [
     { type: 'system', title: 'Vencimento de Contrato', description: 'O contrato com o município de ALMADINA vence em breve.', eventDate: '2025-07-31', link: 'municipalities' },
@@ -123,5 +128,4 @@ export const PERMISSION_LABELS: Record<keyof PermissionSet, string> = {
 export const ROLE_LABELS: Record<UserRole, string> = { admin: "Administrador", director: "Diretor", coordinator: "Coordenador", support: "Suporte" };
 
 export const DEFAULT_EXTERNAL_SYSTEMS: ExternalSystem[] = [];
-export const EXTERNAL_SYSTEM_TYPES: ExternalSystemType[] = ['Contábil', 'Licitações', 'Almoxarifado', 'Patrimônio', 'Outro'];// This file is intentionally empty.
-// Constants were centralized in the /constants.ts file in the root directory.
+export const EXTERNAL_SYSTEM_TYPES: ExternalSystemType[] = ['Contábil', 'Licitações', 'Almoxarifado', 'Patrimônio', 'Outro'];
