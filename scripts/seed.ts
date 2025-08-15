@@ -1,3 +1,6 @@
+
+
+
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -17,7 +20,8 @@ import {
     DEFAULT_PAYROLLS,
     DEFAULT_LEAVE_REQUESTS,
     DEFAULT_EXTERNAL_SYSTEMS,
-    DEFAULT_PERMISSIONS
+    DEFAULT_PERMISSIONS,
+    DEFAULT_QUOTE_FOLDERS
 } from '../constants.js';
 import { pbkdf2Sync, randomBytes } from 'crypto';
 
@@ -157,6 +161,11 @@ async function main() {
         console.log('Povoando a tabela de sistemas externos...');
         if (DEFAULT_EXTERNAL_SYSTEMS.length > 0) {
             await db.insert(schema.externalSystems).values(DEFAULT_EXTERNAL_SYSTEMS);
+        }
+
+        console.log('Povoando a tabela de pastas de cotações...');
+        if (DEFAULT_QUOTE_FOLDERS.length > 0) {
+            await db.insert(schema.quoteFolders).values(DEFAULT_QUOTE_FOLDERS);
         }
 
         console.log('Salvando configurações padrão (permissões)...');
