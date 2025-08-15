@@ -1,12 +1,14 @@
 
 
 
+
+
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { getUserInitials, formatDate, timeAgo } from '../../utils/utils';
 import { Notification, NotificationType } from '../../types';
-import { Bell, User, LogOut, ChevronDown, Menu, BellRing, Trash2, Plus, X, SlidersHorizontal } from 'lucide-react';
+import { Bell, User, LogOut, ChevronDown, Menu, BellRing, Trash2, Plus, X, SlidersHorizontal, HelpCircle } from 'lucide-react';
 import ProfileModal from './ProfileModal';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -69,9 +71,10 @@ interface HeaderProps {
   title: string;
   onMenuClick: () => void;
   setActiveTab: (tab: string) => void;
+  onStartTour: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, onMenuClick, setActiveTab }) => {
+const Header: React.FC<HeaderProps> = ({ title, onMenuClick, setActiveTab, onStartTour }) => {
   const authContext = useContext(AuthContext);
   const { notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, permissions } = useData();
   const user = authContext?.user;
@@ -132,8 +135,11 @@ const Header: React.FC<HeaderProps> = ({ title, onMenuClick, setActiveTab }) => 
         </button>
         <h1 className="text-xl md:text-2xl font-semibold text-gray-800 truncate">{title}</h1>
       </div>
-      <div className="flex items-center space-x-2 sm:space-x-6">
-        <div className="relative" ref={notificationsRef}>
+      <div className="flex items-center space-x-2 sm:space-x-4">
+        <button onClick={onStartTour} className="text-gray-500 hover:text-gray-700 p-2" aria-label="Iniciar tour guiado">
+            <HelpCircle size={24} />
+        </button>
+        <div id="tour-step-4-notifications" className="relative" ref={notificationsRef}>
             <button onClick={() => setNotificationsOpen(!isNotificationsOpen)} className="text-gray-500 hover:text-gray-700 relative p-2">
                 <Bell size={24} />
                 {unreadCount > 0 && (
@@ -178,7 +184,7 @@ const Header: React.FC<HeaderProps> = ({ title, onMenuClick, setActiveTab }) => 
                 </div>
             )}
         </div>
-        <div className="relative" ref={dropdownRef}>
+        <div id="tour-step-5-profile" className="relative" ref={dropdownRef}>
             <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="flex items-center space-x-3 cursor-pointer">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0">
                     {user?.pfp ? (
