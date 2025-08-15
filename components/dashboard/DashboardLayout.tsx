@@ -1,4 +1,5 @@
 
+
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -16,6 +17,7 @@ import HumanResourcesTab from './tabs/HumanResourcesTab';
 import InternalExpensesTab from './tabs/InternalExpensesTab';
 import AssetsTab from './tabs/AssetsTab';
 import DatabaseTab from './tabs/DatabaseTab';
+import QuotesTab from './tabs/QuotesTab';
 import NotesTab from './tabs/NotesTab';
 import UsersTab from './tabs/UsersTab';
 import UpdatesFeedTab from './tabs/UpdatesFeedTab';
@@ -53,6 +55,7 @@ const DashboardLayout: React.FC = () => {
         dashboard: 'canViewDashboard',
         'updates-feed': 'canViewDashboard',
         database: 'canManageDocuments',
+        quotes: 'canManageDocuments',
         employees: 'canManageEmployees',
         tasks: 'canManageTasks',
         finance: 'canManageFinance',
@@ -85,6 +88,7 @@ const DashboardLayout: React.FC = () => {
         dashboard: { component: <DashboardTab setActiveTab={setActiveTab} />, permission: 'canViewDashboard' },
         'updates-feed': { component: <UpdatesFeedTab />, permission: 'canViewDashboard' },
         database: { component: <DatabaseTab />, permission: 'canManageDocuments' },
+        quotes: { component: <QuotesTab />, permission: 'canManageDocuments' },
         employees: { component: <EmployeesTab />, permission: 'canManageEmployees' },
         tasks: { component: <TasksTab />, permission: 'canManageTasks' },
         finance: { component: <FinanceTab />, permission: 'canManageFinance' },
@@ -113,6 +117,7 @@ const DashboardLayout: React.FC = () => {
     dashboard: 'Dashboard',
     'updates-feed': 'Notas de Atualização',
     database: 'Base de Dados de Municípios',
+    quotes: 'Gerenciamento de Cotações',
     employees: 'Gerenciar Funcionários',
     tasks: 'Gerenciar Tarefas',
     finance: 'Balanço Financeiro',
