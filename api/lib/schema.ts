@@ -1,3 +1,5 @@
+
+
 import { relations } from 'drizzle-orm';
 import { pgTable, text, varchar, timestamp, uuid, pgEnum, integer, serial, boolean, jsonb, decimal, date } from 'drizzle-orm/pg-core';
 
@@ -196,6 +198,20 @@ export const appConfig = pgTable('app_config', {
   value: jsonb('value'),
 });
 
+export const quoteFolders = pgTable('quote_folders', {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
+});
+
+export const quoteFiles = pgTable('quote_files', {
+    id: serial('id').primaryKey(),
+    folderId: integer('folder_id').notNull().references(() => quoteFolders.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    type: varchar('type', { length: 100 }).notNull(),
+    size: integer('size').notNull(),
+    url: varchar('url', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
 // --- RELATIONS ---
 
@@ -262,4 +278,15 @@ export const payrollRecordsRelations = relations(payrollRecords, ({ one }) => ({
 
 export const leaveRequestsRelations = relations(leaveRequests, ({ one }) => ({
     employee: one(employees, { fields: [leaveRequests.employeeId], references: [employees.id] }),
+}));
+
+export const quoteFoldersRelations = relations(quoteFolders, ({ many }) => ({
+    files: many(quoteFiles),
+}));
+
+export const quoteFilesRelations = relations(quoteFiles, ({ one }) => ({
+    folder: one(quoteFolders, {
+        fields: [quoteFiles.folderId],
+        references: [quoteFolders.id],
+    }),
 }));
