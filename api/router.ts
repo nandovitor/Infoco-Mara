@@ -102,7 +102,7 @@ export default async function handler(req: any, res: any) {
         let userRole: UserRole | undefined = undefined;
 
         const isPublicEndpoint = (entity === 'gemini') ||
-                             (entity === 'zoho' && (action === 'getAuthUrl' || action === 'refreshToken')) ||
+                             (entity === 'zoho' && (action === 'getAuthUrl' || action === 'refreshToken' || action === 'exchangeCode')) ||
                              (entity === 'auth' && action === 'login');
 
         if (!isPublicEndpoint) {
@@ -401,10 +401,47 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
 
 
     if (req.method === 'GET' && action === 'getAuthUrl') {
-        const params = new URLSearchParams({ scope: zohoConfig.scopes, client_id: zohoConfig.clientId!, response_type: 'token', redirect_uri: zohoConfig.redirectUri!, access_type: 'offline', prompt: 'consent' });
+        const params = new URLSearchParams({
+            scope: zohoConfig.scopes,
+            client_id: zohoConfig.clientId!,
+            response_type: 'code',
+            redirect_uri: zohoConfig.redirectUri!,
+            access_type: 'offline',
+            prompt: 'consent'
+        });
         const authUrl = `${zohoConfig.accountsUrl}/oauth/v2/auth?${params.toString()}`;
         return res.status(200).json({ authUrl });
     }
+
+    if (req.method === 'POST' && action === 'exchangeCode') {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ error: 'Código de autorização é obrigatório.' });
+        }
+
+        const params = new URLSearchParams({
+            code,
+            client_id: zohoConfig.clientId!,
+            client_secret: zohoConfig.clientSecret!,
+            redirect_uri: zohoConfig.redirectUri!,
+            grant_type: 'authorization_code',
+        });
+
+        const response = await fetch(`${zohoConfig.accountsUrl}/oauth/v2/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString(),
+        });
+
+        const tokenData = await response.json();
+        if (!response.ok || tokenData.error) {
+            console.error("Erro na troca de token do Zoho:", tokenData);
+            throw new Error(tokenData.error_description || tokenData.error || 'Falha ao trocar o código pelo token.');
+        }
+        
+        return res.status(200).json(tokenData);
+    }
+
     if (req.method === 'POST' && action === 'refreshToken') {
         const { refresh_token } = req.body;
         if (!refresh_token) return res.status(400).json({ error: 'Refresh token é obrigatório.' });
