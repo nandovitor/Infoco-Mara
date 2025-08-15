@@ -45,7 +45,7 @@ function checkZohoCredentials() {
     if (!zohoConfig.clientSecret) missingVars.push('ZOHO_CLIENT_SECRET');
     if (!zohoConfig.redirectUri) missingVars.push('ZOHO_REDIRECT_URI');
     if (missingVars.length > 0) {
-        throw new Error(`As seguintes variáveis de ambiente do Zoho estão faltando no servidor: ${missingVars.join(', ')}`);
+        throw new Error(`A integração com o Zoho Mail está desativada. As seguintes variáveis de ambiente precisam ser configuradas no painel do Vercel: ${missingVars.join(', ')}`);
     }
 }
 
