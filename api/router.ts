@@ -9,7 +9,7 @@ import type { AttachmentPayload } from './lib/types.js';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { checkPermission } from './lib/permissions.js';
-import type { UserRole } from '../types.js';
+import type { UserRole, ZohoTokenPayload } from '../types.js';
 
 
 // --- Environment Variable Check ---
@@ -433,7 +433,7 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
             body: params.toString(),
         });
 
-        const tokenData = await response.json();
+        const tokenData = await response.json() as ZohoTokenPayload & { error?: string, error_description?: string };
         if (!response.ok || tokenData.error) {
             console.error("Erro na troca de token do Zoho:", tokenData);
             throw new Error(tokenData.error_description || tokenData.error || 'Falha ao trocar o código pelo token.');
@@ -472,25 +472,40 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         const emailData = await emailResponse.json() as { data: any[] };
 
         const emailList = Array.isArray(emailData.data) ? emailData.data : [];
-        const simplifiedEmails = emailList.map((email: any) => {
-            const from = email.from || { emailAddress: 'desconhecido@email.com', name: 'Remetente Desconhecido' };
-            const to = Array.isArray(email.toAddress) 
-                ? email.toAddress.map((t: any) => ({ emailAddress: t?.address || '', name: t?.name || '' })) 
-                : [];
-            const receivedTimestamp = Number(email.receivedTime);
-            const receivedTime = !isNaN(receivedTimestamp) && receivedTimestamp > 0
-                ? new Date(receivedTimestamp).toISOString()
-                : new Date().toISOString();
+        const simplifiedEmails = emailList.flatMap((email: any) => {
+            try {
+                if (!email || typeof email !== 'object') {
+                    console.warn('Item inválido na lista de e-mails do Zoho foi ignorado:', email);
+                    return []; // Ignora este item
+                }
+
+                const from = email.from || { emailAddress: 'desconhecido@email.com', name: 'Remetente Desconhecido' };
                 
-            return {
-                messageId: email.messageId || `missing-id-${Math.random()}`,
-                from: from,
-                to: to,
-                subject: email.subject || '(Sem assunto)',
-                summary: email.summary || '',
-                receivedTime: receivedTime,
-                isRead: !!email.isRead,
-            };
+                const to = Array.isArray(email.toAddress)
+                    ? email.toAddress.map((t: any) => ({
+                        emailAddress: t?.address || '',
+                        name: t?.name || ''
+                    }))
+                    : [];
+
+                const receivedTimestamp = Number(email.receivedTime);
+                const receivedTime = !isNaN(receivedTimestamp) && receivedTimestamp > 0
+                    ? new Date(receivedTimestamp).toISOString()
+                    : new Date().toISOString();
+                
+                return [{
+                    messageId: email.messageId || `missing-id-${Math.random()}`,
+                    from,
+                    to,
+                    subject: email.subject || '(Sem assunto)',
+                    summary: email.summary || '',
+                    receivedTime,
+                    isRead: !!email.isRead,
+                }];
+            } catch (e: any) {
+                console.error('Falha ao processar um e-mail da lista do Zoho. E-mail problemático:', email, 'Erro:', e.message);
+                return []; // Ignora o e-mail problemático para não quebrar a listagem inteira
+            }
         });
         return res.status(200).json({ emails: simplifiedEmails, accountId });
     }
