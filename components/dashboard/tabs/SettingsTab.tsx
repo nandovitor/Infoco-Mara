@@ -7,7 +7,7 @@ import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
-import { UploadCloud, Image as ImageIcon, Trash2, Link as LinkIcon, PlusCircle, Loader2, HelpCircle } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Trash2, Link as LinkIcon, PlusCircle, Loader2, HelpCircle, AlertTriangle } from 'lucide-react';
 import Alert from '../../ui/Alert';
 import Modal from '../../ui/Modal';
 import DataTable, { Column } from '../../ui/DataTable';
@@ -295,14 +295,29 @@ const SettingsTab: React.FC = () => {
                 <p className="text-sm text-gray-500 mb-4">Se a integração com o Zoho Mail não estiver funcionando, use esta ferramenta para verificar se as variáveis de ambiente estão corretas no servidor.</p>
                 <Button onClick={handleCheckZohoConfig} isLoading={isCheckingZoho}>Verificar Configuração do Servidor</Button>
                 {zohoConfig && (
-                     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                         <h3 className="font-semibold text-gray-800 mb-2">Configuração do Zoho Carregada pelo Servidor:</h3>
                         {zohoConfig.error ? (
                             <Alert type="danger" message={zohoConfig.error} />
                         ) : (
-                            <pre className="text-xs bg-gray-900 text-white p-3 rounded-md overflow-x-auto">
-                                {JSON.stringify(zohoConfig, null, 2)}
-                            </pre>
+                             <>
+                                <pre className="text-xs bg-gray-900 text-white p-3 rounded-md overflow-x-auto">
+                                    {JSON.stringify(zohoConfig, null, 2)}
+                                </pre>
+                                <div className="mt-3 p-3 bg-yellow-50 text-yellow-800 rounded-md text-sm flex items-start gap-3">
+                                    <AlertTriangle className="w-8 h-8 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <p className="font-semibold">Ponto de Verificação Importante</p>
+                                        <p>
+                                            O erro "Cliente Inválido" geralmente ocorre por uma de duas razões:
+                                        </p>
+                                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                                            <li>O <strong>Data Center</strong> está incorreto. Verifique se o domínio no <code>accountsUrl</code> acima (ex: zoho<strong>.com</strong>, zoho<strong>.eu</strong>) corresponde ao da sua conta Zoho. Se for diferente, adicione a variável de ambiente <code>ZOHO_ACCOUNTS_URL</code> no Vercel.</li>
+                                            <li>As credenciais do <strong>aplicativo errado</strong> foram copiadas. Você tem duas aplicações no Zoho ("INFOCO" e "Infoco Gestao"). Garanta que está usando as credenciais da aplicação correta.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
