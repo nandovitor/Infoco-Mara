@@ -9,7 +9,7 @@ import type { AttachmentPayload } from './lib/types.js';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { checkPermission } from './lib/permissions.js';
-import type { UserRole } from '../types.js';
+import type { UserRole } from './lib/types.js';
 
 
 // --- Environment Variable Check ---
