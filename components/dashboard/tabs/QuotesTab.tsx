@@ -70,7 +70,7 @@ const QuotesTab: React.FC = () => {
     }, [quoteFiles, selectedFolder]);
 
     const handleSaveFolder = (name: string) => {
-        if (folderToEdit) {
+        if (folderToEdit && folderToEdit.id) {
             updateQuoteFolder({ ...folderToEdit, name });
         } else {
             addQuoteFolder({ name });
