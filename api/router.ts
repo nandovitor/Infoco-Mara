@@ -379,7 +379,7 @@ async function geminiRouter(req: any, res: any) {
 async function handleZohoError(response: Response, defaultMessage: string): Promise<never> {
     let errorMessage = defaultMessage;
     try {
-        const errorData = await response.json();
+        const errorData: any = await response.json();
         const message = errorData?.data?.message || errorData?.message || errorData?.error_description || errorData?.error;
         if (message) {
             errorMessage = message;
@@ -448,7 +448,7 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         if (!response.ok) {
             await handleZohoError(response, 'Falha ao trocar o código pelo token.');
         }
-        const tokenData = await response.json();
+        const tokenData = await response.json() as ZohoTokenPayload;
         return res.status(200).json(tokenData);
     }
 
