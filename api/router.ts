@@ -1,4 +1,5 @@
 
+
 import { db } from './lib/db.js';
 import * as schema from './lib/schema.js';
 import { eq } from 'drizzle-orm';
@@ -88,6 +89,8 @@ const ENTITY_MAP = {
     managedFiles: schema.managedFiles,
     paymentNotes: schema.paymentNotes,
     notifications: schema.notifications,
+    quoteFolders: schema.quoteFolders,
+    quoteFiles: schema.quoteFiles,
 };
 type EntityName = keyof typeof ENTITY_MAP;
 
