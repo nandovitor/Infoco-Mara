@@ -499,18 +499,30 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         }
         const accessToken = authHeader.split(' ')[1];
         
-        const getAccountId = async (token: string) => {
-            const response = await fetch(`${zohoConfig.apiBaseUrl}/accounts`, { headers: { 'Authorization': `Zoho-oauthtoken ${token}` } });
+        const getMailAccount = async (token: string) => {
+            const response = await fetch(`${zohoConfig.apiBaseUrl}/accounts`, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
             if (!response.ok) {
-                throw await handleZohoError(response, 'Falha ao buscar a conta do Zoho.');
+                throw await handleZohoError(response, 'Falha ao buscar as contas do Zoho.');
             }
-            const data = await response.json() as { data: { accountId: string }[] };
-            if (!data?.data?.[0]?.accountId) throw new Error('accountId não encontrado na resposta do Zoho.');
-            return data.data[0].accountId;
+            const data = (await response.json()) as { data: { accountId: string; mailHostingEnabled: boolean; primaryEmailAddress: string }[] };
+
+            if (!data?.data || data.data.length === 0) {
+                throw new Error('Nenhuma conta do Zoho encontrada na resposta da API.');
+            }
+            
+            const mailAccount = data.data.find(acc => acc.mailHostingEnabled === true);
+            
+            if (!mailAccount) {
+                console.error("Nenhuma conta com 'mailHostingEnabled: true' foi encontrada. Resposta completa do Zoho:", JSON.stringify(data.data, null, 2));
+                throw new Error("Não foi possível encontrar uma conta de e-mail habilitada. Verifique se o Zoho Mail está ativo para este usuário.");
+            }
+            return mailAccount;
         };
 
         if (req.method === 'GET' && action === 'listEmails') {
-            const accountId = await getAccountId(accessToken);
+            const mailAccount = await getMailAccount(accessToken);
+            const accountId = mailAccount.accountId;
+
             const params = new URLSearchParams({ limit: '50', sortorder: 'desc', status: 'all' });
             const emailResponse = await fetch(`${zohoConfig.apiBaseUrl}/accounts/${accountId}/messages/view?${params.toString()}`, { headers: { 'Authorization': `Zoho-oauthtoken ${accessToken}` } });
             
@@ -545,7 +557,7 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
                     return [];
                 }
             });
-            return res.status(200).json({ emails: simplifiedEmails, accountId });
+            return res.status(200).json({ emails: simplifiedEmails, accountId: accountId, primaryEmailAddress: mailAccount.primaryEmailAddress });
         }
 
         if (req.method === 'GET' && action === 'getEmail') {
