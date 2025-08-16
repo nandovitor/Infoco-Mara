@@ -7,9 +7,29 @@ import { AuthContext } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Alert from '../ui/Alert';
-import { Globe, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import { useData } from '../../contexts/DataContext';
+
+// A simplified blue and white earth icon
+const EarthIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 100 100"
+    className={className}
+    aria-hidden="true"
+  >
+    <circle cx="50" cy="50" r="50" fill="#3B82F6" />
+    <path
+      fill="#FFFFFF"
+      d="M59.4,23.1c-3-1.6-6.4-2.6-9.9-2.6c-10,0-18.5,6-22.1,14.5c-1,2.4-1.6,4.9-1.8,7.6c-0.1,2.5-0.1,5.2,0.6,7.8 c1.7,6.4,5.4,12,10.6,15.9c3.1,2.3,6.7,3.9,10.5,4.5c1.1,0.2,2.3,0.3,3.4,0.3c3.5,0,6.8-0.9,9.8-2.6c5.1-3,8.9-7.8,11-13.6 c1.6-4.5,2.1-9.3,1.3-14c-1.3-8.3-6.2-15.5-13.4-19.8V23.1z M39.3,35.7c0.8-2.6,2.3-4.9,4.4-6.8c1.3-1.2,2.8-2.1,4.5-2.8 c-0.9,2.8-1.4,5.8-1.4,8.8c0,8.4,3.4,15.9,8.8,20.8c-2,0.9-4.2,1.3-6.4,1.3c-6.9,0-13-4.2-15.8-10.4 C37.2,43.2,38.1,39.3,39.3,35.7z"
+    />
+    <path
+      fill="#FFFFFF"
+      d="M72.9,50.1c-0.4-3.4-1.6-6.6-3.6-9.5c-0.8-1.2-1.7-2.3-2.7-3.4c-2.4,4.3-3.8,9.2-3.8,14.4c0,3.1,0.5,6,1.4,8.8 c4.1-1.3,7.5-4.2,9.8-8.2C74.6,51.5,73.8,50.8,72.9,50.1z"
+    />
+  </svg>
+);
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -56,7 +76,7 @@ const LoginPage: React.FC = () => {
                  {loginScreenImageUrl ? (
                     <img src={loginScreenImageUrl} alt="Logo do Sistema" className="w-full h-full object-cover" />
                 ) : (
-                    <Globe className="text-white w-10 h-10" />
+                    <EarthIcon className="w-20 h-20 p-2" />
                 )}
             </div>
             <h1 className="text-3xl font-bold text-gray-800">INFOCO</h1>
