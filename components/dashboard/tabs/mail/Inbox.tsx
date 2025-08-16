@@ -4,7 +4,7 @@ import { ZohoEmailListItem } from '../../../../types';
 import EmailListItem from './EmailListItem';
 import Spinner from '../../../ui/Spinner';
 import Button from '../../../ui/Button';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
 
 interface InboxProps {
     onEmailSelect: (email: ZohoEmailListItem | null) => void;
@@ -35,6 +35,47 @@ const Inbox: React.FC<InboxProps> = ({ onEmailSelect, selectedEmailId }) => {
         fetchEmails();
     }, [fetchEmails]);
 
+    const renderErrorState = () => {
+        if (!error) return null;
+
+        // Check for the specific account configuration error
+        if (error.includes("Não foi possível encontrar uma conta de e-mail habilitada")) {
+            return (
+                <div className="p-6 text-center text-yellow-800 bg-yellow-50 rounded-lg m-4 border border-yellow-200">
+                    <HelpCircle className="mx-auto w-10 h-10 mb-3 text-yellow-500" />
+                    <h3 className="font-bold text-lg mb-2">Ação Necessária: Ativar Zoho Mail</h3>
+                    <p className="text-sm mb-4">
+                        Conseguimos nos conectar à sua conta Zoho, mas parece que o serviço de e-mail não está ativo para o seu usuário.
+                    </p>
+                    <div className="text-left text-sm space-y-3 bg-white p-4 rounded-md border">
+                        <p className="font-semibold">Para resolver, por favor, verifique o seguinte:</p>
+                        <ol className="list-decimal list-inside space-y-2">
+                            <li>
+                                <strong>Para Administradores:</strong> Acesse o Painel de Controle do Zoho e certifique-se de que uma licença do "Zoho Mail" está atribuída a este usuário.
+                            </li>
+                            <li>
+                                <strong>Para Usuários:</strong> Entre em contato com o administrador da sua organização e solicite a ativação do Zoho Mail para a sua conta.
+                            </li>
+                        </ol>
+                    </div>
+                     <Button onClick={fetchEmails} variant="secondary" size="sm" className="mt-6" disabled={isLoading}>
+                        <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        Tentar Novamente Após Ativar
+                    </Button>
+                </div>
+            );
+        }
+
+        // Generic error
+        return (
+            <div className="p-4 text-center text-red-600">
+                <AlertCircle className="mx-auto w-8 h-8 mb-2" />
+                <p className="text-sm">{error}</p>
+            </div>
+        );
+    };
+
+
     return (
         <div className="flex flex-col h-full">
             <div className="p-3 border-b flex items-center justify-between gap-2">
@@ -49,18 +90,13 @@ const Inbox: React.FC<InboxProps> = ({ onEmailSelect, selectedEmailId }) => {
                         <Spinner />
                     </div>
                 )}
-                {error && (
-                     <div className="p-4 text-center text-red-600">
-                        <AlertCircle className="mx-auto w-8 h-8 mb-2" />
-                        <p className="text-sm">{error}</p>
-                    </div>
-                )}
+                {error && renderErrorState()}
                 {!isLoading && !error && emails.length === 0 && (
                     <div className="p-4 text-center text-gray-500">
                         <p>Sua caixa de entrada está vazia.</p>
                     </div>
                 )}
-                {!isLoading && emails.length > 0 && (
+                {!isLoading && !error && emails.length > 0 && (
                     <ul>
                         {emails.map(email => (
                             <EmailListItem
