@@ -22,12 +22,13 @@ interface MailContextType {
 export const MailContext = createContext<MailContextType | null>(null);
 
 const apiRequest = async (entity: 'zoho', action: string, method: 'GET' | 'POST' | 'DELETE' = 'GET', options: RequestInit = {}) => {
+    const { headers: optionHeaders, ...restOfOptions } = options;
     const response = await fetch(`/api/router?entity=${entity}&action=${action}`, {
         method,
-        ...options,
+        ...restOfOptions,
         headers: {
             'Content-Type': 'application/json',
-            ...(options.headers || {}),
+            ...optionHeaders,
         },
     });
     return handleApiResponse(response);
