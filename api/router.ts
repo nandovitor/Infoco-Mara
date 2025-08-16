@@ -381,11 +381,25 @@ async function geminiRouter(req: any, res: any) {
  */
 async function handleZohoError(response: Response, defaultMessage: string): Promise<Error> {
     let errorMessage = defaultMessage;
+    let specificMessage = '';
     try {
         const errorData: any = await response.json();
         const message = errorData?.data?.message || errorData?.message || errorData?.error_description || errorData?.error;
+        
         if (message) {
-            errorMessage = message;
+            specificMessage = typeof message === 'string' ? message : JSON.stringify(message);
+
+            // Add helpful hints for common errors
+            if (specificMessage.toLowerCase().includes('invalid_client')) {
+                errorMessage = `Cliente Zoho inválido. Verifique se as credenciais (Client ID/Secret) e o Data Center (ZOHO_ACCOUNTS_URL) estão corretos nas variáveis de ambiente do servidor.`;
+            } else if (specificMessage.toLowerCase().includes('invalid_code')) {
+                 errorMessage = `Código de autorização inválido ou expirado. Tente se reconectar.`;
+            } else if (specificMessage.toLowerCase().includes('invalid_oauth')) { // Catches invalid_oauth_token
+                 errorMessage = `Token de acesso inválido. A sessão pode ter sido revogada. Tente se reconectar.`;
+            } else {
+                 errorMessage = `Erro do Zoho: ${specificMessage}`;
+            }
+
         } else {
             errorMessage = `${defaultMessage} (Status: ${response.status} ${response.statusText})`;
         }
