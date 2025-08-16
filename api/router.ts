@@ -489,7 +489,14 @@ async function zohoRouter(req: any, res: any, userRole?: UserRole) {
         }
 
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Token de autorização ausente ou malformado.' });
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            const details = `O servidor não recebeu o cabeçalho de autorização. Cabeçalhos recebidos: ${JSON.stringify(req.headers)}`;
+            console.error(`Token de autorização ausente. ${details}`);
+            return res.status(401).json({ 
+                error: 'Token de autorização ausente ou malformado.',
+                details: details
+            });
+        }
         const accessToken = authHeader.split(' ')[1];
         
         const getAccountId = async (token: string) => {
