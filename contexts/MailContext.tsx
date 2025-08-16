@@ -18,6 +18,7 @@ interface MailContextType {
     getEmailDetails: (messageId: string) => Promise<ZohoEmail | null>;
     sendEmail: (to: string, subject: string, content: string, attachments?: File[]) => Promise<void>;
     deleteEmail: (messageId: string) => Promise<void>;
+    getValidAccessToken: () => Promise<string | null>;
 }
 
 export const MailContext = createContext<MailContextType | null>(null);
@@ -205,7 +206,7 @@ export const MailProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <MailContext.Provider value={{ tokens, accountInfo, isAuthenticated, isConnecting, error, connect, disconnect, saveTokens, listEmails, getEmailDetails, sendEmail, deleteEmail }}>
+        <MailContext.Provider value={{ tokens, accountInfo, isAuthenticated, isConnecting, error, connect, disconnect, saveTokens, listEmails, getEmailDetails, sendEmail, deleteEmail, getValidAccessToken }}>
             {children}
         </MailContext.Provider>
     );
