@@ -30,15 +30,25 @@ function checkEnvVariables() {
     }
 }
 
-// --- Zoho Config ---
-const zohoConfig = {
-    clientId: process.env.ZOHO_CLIENT_ID,
-    clientSecret: process.env.ZOHO_CLIENT_SECRET,
-    redirectUri: process.env.ZOHO_REDIRECT_URI?.replace(/\/$/, ''), // Remove trailing slash if present
-    scopes: ['ZohoMail.accounts.READ', 'ZohoMail.messages.ALL', 'ZohoMail.messages.CREATE'].join(','),
-    accountsUrl: process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.com',
-    apiBaseUrl: process.env.ZOHO_API_BASE_URL || 'https://mail.zoho.com/api',
-};
+// --- Zoho Config (Dynamic) ---
+function getZohoConfig() {
+    const accountsUrl = (process.env.ZOHO_ACCOUNTS_URL || 'https://accounts.zoho.com').replace(/\/$/, '');
+    const accountsDomain = new URL(accountsUrl).hostname; // e.g., "accounts.zoho.com"
+    // Extracts the top-level domain like "zoho.com" or "zoho.eu"
+    const rootDomain = accountsDomain.split('.').slice(1).join('.');
+
+    return {
+        clientId: process.env.ZOHO_CLIENT_ID,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET,
+        redirectUri: process.env.ZOHO_REDIRECT_URI?.replace(/\/$/, ''), // Remove trailing slash
+        scopes: ['ZohoMail.accounts.READ', 'ZohoMail.messages.ALL', 'ZohoMail.messages.CREATE'].join(','),
+        accountsUrl: accountsUrl,
+        apiBaseUrl: `https://mail.${rootDomain}/api`,
+    };
+}
+
+const zohoConfig = getZohoConfig();
+
 
 function checkZohoCredentials() {
     const missingVars = [];
