@@ -1,9 +1,13 @@
+
+
+
+
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Alert from '../ui/Alert';
-import { AppWindow, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Globe, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import { useData } from '../../contexts/DataContext';
 
@@ -52,7 +56,7 @@ const LoginPage: React.FC = () => {
                  {loginScreenImageUrl ? (
                     <img src={loginScreenImageUrl} alt="Logo do Sistema" className="w-full h-full object-cover" />
                 ) : (
-                    <AppWindow className="text-white w-10 h-10" />
+                    <Globe className="text-white w-10 h-10" />
                 )}
             </div>
             <h1 className="text-3xl font-bold text-gray-800">INFOCO</h1>
