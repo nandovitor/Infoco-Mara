@@ -1,6 +1,3 @@
-
-
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import {
     Employee, Task, FinanceData, Permissions, EmployeeExpense, InternalExpense, Asset, ManagedFile,
@@ -83,6 +80,7 @@ interface DataContextType extends AppData {
   addUser: (user: Omit<Profile, 'id' | 'pfp'> & { password?: string }) => Promise<boolean>;
   updateUser: (user: Profile) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
+  changeUserPassword: (userId: string, newPassword: string) => Promise<boolean>;
   addUpdatePost: (post: Omit<UpdatePost, 'id' | 'created_at' | 'author_id'>) => Promise<boolean>;
   updateUpdatePost: (post: UpdatePost) => Promise<boolean>;
   deleteUpdatePost: (postId: number) => Promise<boolean>;
@@ -216,6 +214,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
     };
 
+    const changeUserPassword = async (userId: string, newPassword: string) => {
+        await apiRequest('POST', 'profiles', 'changePassword', { userId, newPassword });
+        return true;
+    };
+
     const value: DataContextType = {
         isLoading, fetchData, clearData,
         ...appData,
@@ -230,6 +233,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addPayroll: crudHandlers.payrolls.add, deletePayroll: crudHandlers.payrolls.remove,
         addLeaveRequest: crudHandlers.leaveRequests.add, updateLeaveRequest: crudHandlers.leaveRequests.update,
         addUser: crudHandlers.profiles.add as any, updateUser: crudHandlers.profiles.update, deleteUser: crudHandlers.profiles.remove,
+        changeUserPassword,
         addUpdatePost: crudHandlers.updatePosts.add as any, updateUpdatePost: crudHandlers.updatePosts.update, deleteUpdatePost: crudHandlers.updatePosts.remove,
         addExternalSystem: crudHandlers.externalSystems.add, updateExternalSystem: crudHandlers.externalSystems.update, deleteExternalSystem: crudHandlers.externalSystems.remove,
         addFile: crudHandlers.managedFiles.add as (file: Omit<ManagedFile, 'id' | 'createdAt'>) => Promise<boolean>, 
