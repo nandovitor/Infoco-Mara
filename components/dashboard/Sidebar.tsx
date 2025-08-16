@@ -1,11 +1,12 @@
 
 
 
+
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { cn } from '../../utils/utils';
-import { LayoutDashboard, Users, ListChecks, DollarSign, BarChart2, Building, Landmark, SlidersHorizontal, Handshake, ClipboardList, Archive, Database, ChevronDown, NotebookText, UsersRound, Megaphone, Mail, Globe, ReceiptText } from 'lucide-react';
+import { LayoutDashboard, Users, ListChecks, DollarSign, BarChart2, Building, Landmark, SlidersHorizontal, Handshake, ClipboardList, Archive, Database, ChevronDown, NotebookText, UsersRound, Megaphone, Mail, ReceiptText } from 'lucide-react';
 import { PermissionSet } from '../../types';
 
 interface SidebarProps {
@@ -22,6 +23,27 @@ interface NavItem {
     permission: keyof PermissionSet;
     subItems?: Omit<NavItem, 'subItems'>[];
 }
+
+// A simplified blue and white earth icon
+const EarthIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 100 100"
+    className={className}
+    aria-hidden="true"
+  >
+    <circle cx="50" cy="50" r="50" fill="#3B82F6" />
+    <path
+      fill="#FFFFFF"
+      d="M59.4,23.1c-3-1.6-6.4-2.6-9.9-2.6c-10,0-18.5,6-22.1,14.5c-1,2.4-1.6,4.9-1.8,7.6c-0.1,2.5-0.1,5.2,0.6,7.8 c1.7,6.4,5.4,12,10.6,15.9c3.1,2.3,6.7,3.9,10.5,4.5c1.1,0.2,2.3,0.3,3.4,0.3c3.5,0,6.8-0.9,9.8-2.6c5.1-3,8.9-7.8,11-13.6 c1.6-4.5,2.1-9.3,1.3-14c-1.3-8.3-6.2-15.5-13.4-19.8V23.1z M39.3,35.7c0.8-2.6,2.3-4.9,4.4-6.8c1.3-1.2,2.8-2.1,4.5-2.8 c-0.9,2.8-1.4,5.8-1.4,8.8c0,8.4,3.4,15.9,8.8,20.8c-2,0.9-4.2,1.3-6.4,1.3c-6.9,0-13-4.2-15.8-10.4 C37.2,43.2,38.1,39.3,39.3,35.7z"
+    />
+    <path
+      fill="#FFFFFF"
+      d="M72.9,50.1c-0.4-3.4-1.6-6.6-3.6-9.5c-0.8-1.2-1.7-2.3-2.7-3.4c-2.4,4.3-3.8,9.2-3.8,14.4c0,3.1,0.5,6,1.4,8.8 c4.1-1.3,7.5-4.2,9.8-8.2C74.6,51.5,73.8,50.8,72.9,50.1z"
+    />
+  </svg>
+);
+
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'canViewDashboard' },
@@ -91,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, setI
     )}>
       <div className="h-20 flex items-center justify-center border-b border-gray-700/50">
           <div className="flex items-center gap-3">
-              <Globe className="text-blue-400" size={28}/>
+              <EarthIcon className="w-7 h-7" />
               <h1 className="text-2xl font-bold">INFOCO</h1>
           </div>
       </div>
