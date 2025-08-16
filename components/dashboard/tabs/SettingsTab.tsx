@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { UserRole, PermissionSet, FinanceData, ExternalSystem, ExternalSystemType } from '../../../types';
 import { PERMISSION_LABELS, ROLE_LABELS, EXTERNAL_SYSTEM_TYPES } from '../../../constants';
@@ -12,6 +12,7 @@ import Modal from '../../ui/Modal';
 import DataTable, { Column } from '../../ui/DataTable';
 import DeleteConfirmationModal from '../../ui/DeleteConfirmationModal';
 import { handleApiResponse } from '../../../utils/utils';
+import { AuthContext } from '../../../contexts/AuthContext';
 
 
 const MAX_IMAGE_SIZE_MB = 2;
@@ -21,8 +22,8 @@ const uploadFile = async (file: File): Promise<string> => {
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
         throw new Error(`O arquivo é muito grande. O limite é ${MAX_IMAGE_SIZE_MB}MB.`);
     }
-
-    const response = await fetch(`/api/upload-blob?filename=${encodeURIComponent(file.name)}`, {
+    const uniqueFilename = `config/login-logo-${Date.now()}-${file.name}`;
+    const response = await fetch(`/api/upload-blob?filename=${encodeURIComponent(uniqueFilename)}`, {
         method: 'POST',
         body: file,
     });
@@ -147,12 +148,19 @@ const SettingsTab: React.FC = () => {
         financeData, updateMunicipality,
         externalSystems, addExternalSystem, updateExternalSystem, deleteExternalSystem
     } = useData();
+    const authContext = useContext(AuthContext);
+    const user = authContext?.user;
     
     const [loginImageFile, setLoginImageFile] = useState<File | null>(null);
     const [loginImagePreview, setLoginImagePreview] = useState<string | null>(loginScreenImageUrl);
     const [loginImageError, setLoginImageError] = useState<string | null>(null);
     const [isUploadingLoginImage, setIsUploadingLoginImage] = useState(false);
     const loginFileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setLoginImagePreview(loginScreenImageUrl);
+    }, [loginScreenImageUrl]);
+
 
     const [isCoatModalOpen, setIsCoatModalOpen] = useState(false);
     const [selectedMunicipality, setSelectedMunicipality] = useState<FinanceData | null>(null);
@@ -187,7 +195,7 @@ const SettingsTab: React.FC = () => {
         setLoginImageError(null);
         try {
             const url = await uploadFile(loginImageFile);
-            updateLoginScreenImage(url);
+            await updateLoginScreenImage(url);
             setLoginImageFile(null); // Clear file after upload
         } catch (err: any) {
             setLoginImageError(err.message);
@@ -196,11 +204,10 @@ const SettingsTab: React.FC = () => {
         }
     };
 
-    const handleRemoveLoginImage = () => {
-        updateLoginScreenImage(null);
+    const handleRemoveLoginImage = async () => {
+        await updateLoginScreenImage(null);
         setLoginImagePreview(null);
         setLoginImageFile(null);
-        alert("Imagem da tela de login removida.");
     }
     
     const openCoatOfArmsModal = (municipality: FinanceData) => {
@@ -262,29 +269,31 @@ const SettingsTab: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            <Card>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Aparência do Sistema</h2>
-                <p className="text-sm text-gray-500 mb-6">Personalize a identidade visual do sistema.</p>
-                <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-700">Logo da Tela de Login</h3>
-                    {loginImageError && <Alert type="danger" message={loginImageError} />}
-                    <div className="flex items-center gap-6">
-                        <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2">
-                             {loginImagePreview ? (
-                                <img src={loginImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                             ) : (
-                                <ImageIcon className="w-12 h-12 text-gray-400" />
-                             )}
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                             <input type="file" ref={loginFileInputRef} onChange={handleLoginFileChange} accept="image/*" className="hidden" />
-                            <Button variant="secondary" onClick={() => loginFileInputRef.current?.click()} disabled={isUploadingLoginImage}><UploadCloud size={16} className="mr-2" />Alterar Imagem</Button>
-                            <Button onClick={handleSaveLoginImage} disabled={!loginImageFile} isLoading={isUploadingLoginImage}>Salvar</Button>
-                            {loginScreenImageUrl && <Button variant="danger" onClick={handleRemoveLoginImage} disabled={isUploadingLoginImage}><Trash2 size={16} className="mr-2"/>Remover</Button>}
+            {user?.role === 'admin' && (
+                 <Card>
+                    <h2 className="text-xl font-semibold text-gray-800 mb-2">Aparência do Sistema</h2>
+                    <p className="text-sm text-gray-500 mb-6">Personalize a identidade visual do sistema.</p>
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-gray-700">Logo da Tela de Login</h3>
+                        {loginImageError && <Alert type="danger" message={loginImageError} />}
+                        <div className="flex items-center gap-6">
+                            <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2">
+                                {loginImagePreview ? (
+                                    <img src={loginImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <ImageIcon className="w-12 h-12 text-gray-400" />
+                                )}
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input type="file" ref={loginFileInputRef} onChange={handleLoginFileChange} accept="image/*" className="hidden" disabled={isUploadingLoginImage}/>
+                                <Button variant="secondary" onClick={() => loginFileInputRef.current?.click()} disabled={isUploadingLoginImage}><UploadCloud size={16} className="mr-2" />Alterar Imagem</Button>
+                                <Button onClick={handleSaveLoginImage} disabled={!loginImageFile} isLoading={isUploadingLoginImage}>Salvar</Button>
+                                {loginScreenImageUrl && <Button variant="danger" onClick={handleRemoveLoginImage} disabled={isUploadingLoginImage}><Trash2 size={16} className="mr-2"/>Remover</Button>}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </Card>
+                </Card>
+            )}
 
             <Card>
                 <div className="flex items-center gap-3 mb-2">
