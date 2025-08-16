@@ -1,10 +1,11 @@
 
 
+
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { cn } from '../../utils/utils';
-import { LayoutDashboard, Users, ListChecks, DollarSign, BarChart2, Building, Landmark, SlidersHorizontal, Handshake, ClipboardList, Archive, Database, ChevronDown, NotebookText, UsersRound, Megaphone, Mail, AppWindow, ReceiptText } from 'lucide-react';
+import { LayoutDashboard, Users, ListChecks, DollarSign, BarChart2, Building, Landmark, SlidersHorizontal, Handshake, ClipboardList, Archive, Database, ChevronDown, NotebookText, UsersRound, Megaphone, Mail, Globe, ReceiptText } from 'lucide-react';
 import { PermissionSet } from '../../types';
 
 interface SidebarProps {
@@ -90,7 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, setI
     )}>
       <div className="h-20 flex items-center justify-center border-b border-gray-700/50">
           <div className="flex items-center gap-3">
-              <AppWindow className="text-blue-400" size={28}/>
+              <Globe className="text-blue-400" size={28}/>
               <h1 className="text-2xl font-bold">INFOCO</h1>
           </div>
       </div>
