@@ -1,18 +1,18 @@
-
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import { Profile, UserRole } from '../../../types';
 import { useData } from '../../../contexts/DataContext';
+import { AuthContext } from '../../../contexts/AuthContext';
 import { DEPARTMENTS, ROLE_LABELS } from '../../../constants';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, KeyRound } from 'lucide-react';
 import DataTable, { Column } from '../../ui/DataTable';
 import DeleteConfirmationModal from '../../ui/DeleteConfirmationModal';
 import { useCrudOperations } from '../../../hooks/useCrudOperations';
-import { SubmitHandler } from 'react-hook-form';
+import { useToast } from '../../../contexts/ToastContext';
 
 
 const UserForm: React.FC<{
@@ -84,7 +84,15 @@ const UserForm: React.FC<{
 );
 
 const UsersTab: React.FC = () => {
-    const { profiles, addUser, updateUser, deleteUser } = useData();
+    const { profiles, addUser, updateUser, deleteUser, changeUserPassword } = useData();
+    const authContext = useContext(AuthContext);
+    const user = authContext?.user;
+    const { addToast } = useToast();
+
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+    const [newPassword, setNewPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     const {
         modal,
@@ -109,12 +117,64 @@ const UsersTab: React.FC = () => {
         },
     });
 
+    const openPasswordModal = (user: Profile) => {
+        setSelectedUser(user);
+        setIsPasswordModalOpen(true);
+    };
+
+    const closePasswordModal = () => {
+        setSelectedUser(null);
+        setNewPassword('');
+        setIsPasswordModalOpen(false);
+        setIsChangingPassword(false);
+    };
+
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedUser || newPassword.length < 6) {
+            addToast('Senha inválida. Deve ter no mínimo 6 caracteres.', 'error');
+            return;
+        }
+        setIsChangingPassword(true);
+        try {
+            await changeUserPassword(selectedUser.id, newPassword);
+            addToast(`Senha de ${selectedUser.name} alterada com sucesso.`, 'success');
+            closePasswordModal();
+        } catch (err: any) {
+            addToast(`Erro ao alterar senha: ${err.message}`, 'error');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
+
     const columns: Column<Profile>[] = [
         { key: 'name', header: 'Nome', className: 'font-medium text-gray-900' },
         { key: 'email', header: 'Email' },
         { key: 'role', header: 'Função', render: (user) => ROLE_LABELS[user.role] || user.role },
         { key: 'department', header: 'Departamento' },
-        { key: 'actions', header: 'Ações', className: 'text-right' },
+        { 
+            key: 'actions', 
+            header: 'Ações', 
+            className: 'text-right',
+            render: (item) => (
+                <div className="flex items-center justify-end gap-2">
+                    {user?.role === 'admin' && item.id !== user.id && (
+                        <Button variant="secondary" size="sm" onClick={() => openPasswordModal(item)} className="p-2 h-auto" aria-label={`Alterar senha de ${item.name}`}>
+                            <KeyRound size={16} />
+                        </Button>
+                    )}
+                    <Button variant="secondary" size="sm" onClick={() => modal.open(item)} className="p-2 h-auto" aria-label={`Editar ${item.name}`}>
+                        <Edit size={16} />
+                    </Button>
+                    {item.id !== user?.id && ( // Prevent admin from deleting themselves
+                         <Button variant="danger" size="sm" onClick={() => handleDeleteRequest(item.id)} className="p-2 h-auto" aria-label={`Excluir ${item.name}`}>
+                            <Trash2 size={16} />
+                        </Button>
+                    )}
+                </div>
+            )
+        },
     ];
 
     return (
@@ -130,8 +190,6 @@ const UsersTab: React.FC = () => {
             <DataTable
                 columns={columns}
                 data={profiles}
-                onEdit={(user) => modal.open(user)}
-                onDelete={handleDeleteRequest}
                 emptyMessage="Nenhum usuário encontrado."
             />
 
@@ -151,6 +209,30 @@ const UsersTab: React.FC = () => {
                     <div className="flex justify-end gap-4 pt-4 border-t mt-6">
                         <Button type="button" variant="secondary" onClick={modal.close} disabled={form.formState.isSubmitting}>Cancelar</Button>
                         <Button type="submit" isLoading={form.formState.isSubmitting}>{form.getValues('id') ? 'Salvar Alterações' : 'Adicionar Usuário'}</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal
+                isOpen={isPasswordModalOpen}
+                onClose={closePasswordModal}
+                title={`Alterar Senha para ${selectedUser?.name}`}
+            >
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-blue-700 mb-1">Nova Senha</label>
+                        <Input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Mínimo 6 caracteres"
+                            required
+                            minLength={6}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-4 pt-4 border-t">
+                        <Button type="button" variant="secondary" onClick={closePasswordModal} disabled={isChangingPassword}>Cancelar</Button>
+                        <Button type="submit" isLoading={isChangingPassword}>Salvar Nova Senha</Button>
                     </div>
                 </form>
             </Modal>
