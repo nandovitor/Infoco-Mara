@@ -384,20 +384,23 @@ async function handleZohoError(response: Response, defaultMessage: string): Prom
     let specificMessage = '';
     try {
         const errorData: any = await response.json();
+        // Zoho nests the real error message in different places
         const message = errorData?.data?.message || errorData?.message || errorData?.error_description || errorData?.error;
         
         if (message) {
             specificMessage = typeof message === 'string' ? message : JSON.stringify(message);
 
-            // Add helpful hints for common errors
+            // Add helpful hints for common, critical configuration errors
             if (specificMessage.toLowerCase().includes('invalid_client')) {
-                errorMessage = `Cliente Zoho inválido. Verifique se as credenciais (Client ID/Secret) e o Data Center (ZOHO_ACCOUNTS_URL) estão corretos nas variáveis de ambiente do servidor.`;
+                errorMessage = `Cliente Zoho Inválido. Este é um erro crítico de configuração do servidor. Verifique se as credenciais (Client ID/Secret) E o Data Center (definido em ZOHO_ACCOUNTS_URL) estão corretos nas variáveis de ambiente.`;
             } else if (specificMessage.toLowerCase().includes('invalid_code')) {
-                 errorMessage = `Código de autorização inválido ou expirado. Tente se reconectar.`;
-            } else if (specificMessage.toLowerCase().includes('invalid_oauth')) { // Catches invalid_oauth_token
-                 errorMessage = `Token de acesso inválido. A sessão pode ter sido revogada. Tente se reconectar.`;
+                 errorMessage = `Código de autorização do Zoho inválido ou expirado. Por favor, tente se conectar novamente.`;
+            } else if (specificMessage.toLowerCase().includes('invalid_grant')) {
+                 errorMessage = `Autorização inválida (invalid_grant). O refresh token pode ser inválido, expirado ou foi revogado. Por favor, desconecte e conecte novamente.`;
+            } else if (specificMessage.toLowerCase().includes('invalid_oauth')) {
+                 errorMessage = `Token de acesso inválido (invalid_oauth). A sessão pode ter sido revogada. Tente se reconectar.`;
             } else {
-                 errorMessage = `Erro do Zoho: ${specificMessage}`;
+                 errorMessage = `Erro retornado pelo Zoho: ${specificMessage}`;
             }
 
         } else {
