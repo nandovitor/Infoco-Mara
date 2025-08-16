@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useMail } from '../../../../contexts/MailContext';
 import { ZohoEmailListItem, ZohoEmail } from '../../../../types';
@@ -24,12 +25,13 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 const EmailDetail: React.FC<EmailDetailProps> = ({ emailListItem, onReply, onDelete }) => {
-    const { getEmailDetails, accountInfo, deleteEmail } = useMail();
+    const { getEmailDetails, accountInfo, deleteEmail, getValidAccessToken } = useMail();
     const [detailedEmail, setDetailedEmail] = useState<ZohoEmail | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [downloadingAttachment, setDownloadingAttachment] = useState<string | null>(null);
 
     useEffect(() => {
         if (emailListItem) {
@@ -53,6 +55,55 @@ const EmailDetail: React.FC<EmailDetailProps> = ({ emailListItem, onReply, onDel
         if (!accountInfo || !emailListItem) return '#';
         return `/api/router?entity=zoho&action=downloadAttachment&messageId=${emailListItem.messageId}&accountId=${accountInfo.accountId}&attachmentId=${attachmentId}&fileName=${encodeURIComponent(fileName)}`;
     };
+
+    const handleDownloadAttachment = async (attachment: { attachmentId: string, fileName: string }) => {
+        if (!emailListItem || !accountInfo || downloadingAttachment) return;
+
+        setDownloadingAttachment(attachment.attachmentId);
+        setError(null);
+
+        try {
+            const accessToken = await getValidAccessToken();
+            if (!accessToken) {
+                throw new Error("Sessão inválida. Por favor, reconecte sua conta do Zoho.");
+            }
+
+            const downloadUrl = getDownloadUrl(attachment.attachmentId, attachment.fileName);
+            
+            const response = await fetch(downloadUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                let errorMsg = `Falha no download do arquivo (Status: ${response.status}).`;
+                try {
+                    const errorJson = await response.json();
+                    errorMsg = errorJson.error || errorJson.details || errorMsg;
+                } catch (e) { /* Ignore if response is not JSON */ }
+                throw new Error(errorMsg);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = attachment.fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (err: any) {
+            setError(`Erro no download: ${err.message}`);
+        } finally {
+            setDownloadingAttachment(null);
+        }
+    };
+
 
     const handleDelete = async () => {
         if (!emailListItem) return;
@@ -124,15 +175,18 @@ const EmailDetail: React.FC<EmailDetailProps> = ({ emailListItem, onReply, onDel
                             </h4>
                             <div className="flex flex-wrap gap-2">
                                 {detailedEmail.attachments.map(att => (
-                                    <a 
-                                        key={att.attachmentId} 
-                                        href={getDownloadUrl(att.attachmentId, att.fileName)} 
-                                        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 transition-colors p-2 rounded-md text-sm"
-                                        download={att.fileName}
+                                    <Button
+                                        key={att.attachmentId}
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => handleDownloadAttachment(att)}
+                                        className="gap-2"
+                                        isLoading={downloadingAttachment === att.attachmentId}
+                                        disabled={!!downloadingAttachment}
                                     >
-                                        <Download size={14} />
+                                        {!downloadingAttachment && <Download size={14} />}
                                         <span>{att.fileName} ({formatBytes(att.size)})</span>
-                                    </a>
+                                    </Button>
                                 ))}
                             </div>
                         </div>
