@@ -1,5 +1,3 @@
-
-
 import { db } from './lib/db.js';
 import * as schema from './lib/schema.js';
 import { eq } from 'drizzle-orm';
@@ -166,6 +164,22 @@ export default async function handler(req: any, res: any) {
             }
             return res.status(400).json({ error: 'Invalid request for config entity' });
         }
+        
+        if (entity === 'profiles' && action === 'changePassword') {
+            if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+            if (userRole !== 'admin') return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem alterar senhas.' });
+            
+            const { userId, newPassword } = req.body;
+            if (!userId || !newPassword || newPassword.length < 6) {
+                return res.status(400).json({ error: 'ID do usuário e uma nova senha (mínimo 6 caracteres) são obrigatórios.' });
+            }
+    
+            const newPasswordHash = hashPassword(newPassword);
+            await db.update(schema.profiles).set({ passwordHash: newPasswordHash }).where(eq(schema.profiles.id, userId));
+            
+            return res.status(200).json({ success: true });
+        }
+
 
         // --- Generic CRUD Handler ---
         if (!entity || !(entity in ENTITY_MAP)) {
