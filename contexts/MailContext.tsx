@@ -146,11 +146,10 @@ export const MailProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const data = await apiRequest('zoho', 'listEmails', 'GET', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
-        }) as { emails: ZohoEmailListItem[], accountId: string };
+        }) as { emails: ZohoEmailListItem[], accountId: string, primaryEmailAddress: string };
         
         if (!accountInfo && data.accountId) {
-            const primaryEmail = data.emails.find(e => e.from)?.from.emailAddress;
-            setAccountInfo({ accountId: data.accountId, primaryEmailAddress: primaryEmail || '' })
+            setAccountInfo({ accountId: data.accountId, primaryEmailAddress: data.primaryEmailAddress || '' })
         }
         
         return data.emails;
