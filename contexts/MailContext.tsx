@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { ZohoTokenData, ZohoAccountInfo, ZohoEmailListItem, ZohoEmail, AttachmentPayload, ZohoTokenPayload } from '../types';
@@ -110,12 +111,26 @@ export const MailProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const saveTokens = (tokenPayload: ZohoTokenPayload) => {
         const { access_token, refresh_token, expires_in } = tokenPayload;
-        
+
         if (access_token && expires_in) {
             const expiresAt = Date.now() + (expires_in - 300) * 1000;
+
+            // Lógica Corrigida:
+            // Um refresh_token é geralmente fornecido apenas na primeira autorização.
+            // Ele deve ser preservado. Só o atualizamos se um novo for explicitamente fornecido.
+            const final_refresh_token = refresh_token || tokens?.refresh_token;
+
+            if (!final_refresh_token) {
+                // Isso é uma falha crítica no fluxo de autenticação.
+                setError('Falha crítica: O Zoho não forneceu um "refresh_token". A conexão não poderá ser mantida. Por favor, desconecte, revogue o acesso do aplicativo na sua conta Zoho e tente conectar novamente.');
+                // Não salva tokens sem um refresh_token, pois eles falharão mais tarde.
+                disconnect();
+                return;
+            }
+
             setTokens({
                 access_token: access_token,
-                refresh_token: refresh_token || tokens?.refresh_token || '',
+                refresh_token: final_refresh_token,
                 expires_at: expiresAt,
             });
             setError(null);
